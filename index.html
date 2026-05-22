@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Club Yama - Menu Semanal</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg: #f5f5f0;
+  --card: #ffffff;
+  --card-hover: #fafafa;
+  --gold: #b8862e;
+  --gold-light: #d4a053;
+  --gold-dark: #8c6518;
+  --white: #1e1e1e;
+  --muted: #777;
+  --green: #4caf50;
+  --green-dark: #388e3c;
+  --border: rgba(140,101,24,0.15);
+  --shadow: 0 8px 32px rgba(0,0,0,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--white);
+  min-height: 100vh;
+  background-image: none;
+}
+
+/* HEADER */
+.header {
+  text-align: center;
+  padding: 30px 20px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 8px;
+}
+
+.header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.2rem;
+  color: var(--gold);
+  letter-spacing: 2px;
+}
+
+.header h1 span {
+  color: var(--white);
+  font-weight: 400;
+}
+
+.header-sub {
+  font-size: 0.85rem;
+  color: var(--muted);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.menu-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+.menu-info .badge {
+  background: rgba(140,101,24,0.08);
+  border: 1px solid var(--border);
+  color: var(--gold-light);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.sync-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 10px;
+}
+
+.sync-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  display: inline-block;
+}
+
+.sync-dot.loading {
+  background: var(--gold);
+  animation: pulse 1s infinite;
+}
+
+.sync-dot.error { background: #c0392b; }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* NOMBRE FORM */
+.nombre-section {
+  max-width: 500px;
+  margin: 20px auto;
+  padding: 0 20px;
+}
+
+.nombre-section label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.nombre-section input {
+  width: 100%;
+  padding: 12px 18px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--white);
+  font-size: 1rem;
+  font-family: 'Inter', sans-serif;
+  text-align: center;
+  transition: border-color 0.3s;
+}
+
+.nombre-section input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.nombre-section input::placeholder { color: var(--muted); }
+
+/* GRID MENU */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 20px;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+.day-card {
+  background: var(--card);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.day-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+
+.day-header {
+  background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+  padding: 14px 20px;
+  text-align: center;
+}
+
+.day-header h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.day-header .date {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.8);
+}
+
+.meal-section {
+  padding: 6px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.meal-section:last-child { border-bottom: none; }
+
+.meal-type {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--gold);
+  margin-bottom: 4px;
+  margin-top: 10px;
+}
+
+.meal-name {
+  font-size: 0.95rem;
+  color: var(--white);
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.meal-complement {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+/* ORDER SECTION per day */
+.day-order {
+  padding: 14px 18px;
+  background: rgba(140,101,24,0.04);
+  border-top: 1px solid var(--border);
+}
+
+.order-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.order-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.qty-control {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--bg);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.qty-btn {
+  width: 38px;
+  height: 38px;
+  border: none;
+  background: transparent;
+  color: var(--gold);
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  font-weight: 700;
+}
+
+.qty-btn:hover { background: rgba(140,101,24,0.1); }
+.qty-btn:active { background: rgba(140,101,24,0.2); }
+
+.qty-value {
+  width: 40px;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--white);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  padding: 6px 0;
+}
+
+.qty-value.active { color: var(--gold); }
+
+/* WATER NOTE */
+.water-note {
+  text-align: center;
+  padding: 10px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+/* SUMMARY BAR */
+.summary-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(15px);
+  border-top: 1px solid var(--border);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  z-index: 100;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  flex-wrap: wrap;
+}
+
+.summary-bar.visible { transform: translateY(0); }
+
+.summary-total { font-size: 0.95rem; color: var(--white); }
+.summary-total strong { color: var(--gold); }
+
+.btn-send {
+  background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+  color: #fff;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: transform 0.2s, box-shadow 0.2s;
+  letter-spacing: 0.5px;
+}
+
+.btn-send:hover { transform: scale(1.03); box-shadow: 0 4px 15px rgba(212,160,83,0.3); }
+.btn-send:active { transform: scale(0.98); }
+
+.btn-copy {
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: background 0.2s;
+}
+
+.btn-copy:hover { background: rgba(140,101,24,0.08); }
+
+/* MODAL */
+.modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(5px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+}
+
+.modal-bg.open { display: flex; }
+
+.modal {
+  background: var(--card);
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  max-width: 500px;
+  width: 100%;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+.modal h3 {
+  font-family: 'Playfair Display', serif;
+  color: var(--gold);
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+}
+
+.modal .check-icon { font-size: 3rem; margin-bottom: 10px; }
+
+.modal .summary-text {
+  text-align: left;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  font-size: 0.85rem;
+  line-height: 1.8;
+  color: var(--white);
+  margin: 15px 0;
+  white-space: pre-line;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.modal .btn-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.modal .btn-whatsapp {
+  background: #25d366;
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+
+.modal .btn-whatsapp:hover { background: #1da851; }
+
+.modal .btn-close {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: background 0.2s;
+}
+
+.modal .btn-close:hover { background: rgba(0,0,0,0.05); }
+
+/* ADMIN TOGGLE */
+.admin-toggle {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  z-index: 50;
+}
+
+.admin-toggle button {
+  background: rgba(140,101,24,0.08);
+  border: 1px solid var(--border);
+  color: var(--gold);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: background 0.2s;
+}
+
+.admin-toggle button:hover { background: rgba(140,101,24,0.15); }
+
+/* ADMIN PANEL */
+.admin-panel {
+  display: none;
+  max-width: 900px;
+  margin: 20px auto;
+  padding: 0 20px 100px;
+}
+
+.admin-panel.visible { display: block; }
+
+.admin-panel h3 {
+  font-family: 'Playfair Display', serif;
+  color: var(--gold);
+  font-size: 1.3rem;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+/* ADMIN FORM */
+.admin-form-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.admin-form-section h4 {
+  color: var(--gold);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.form-group {
+  flex: 1;
+  min-width: 120px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+}
+
+.form-group input, .form-group select {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--white);
+  font-size: 0.9rem;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus, .form-group select:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.form-group input::placeholder { color: #666; }
+
+.day-form-card {
+  background: rgba(140,101,24,0.04);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 15px;
+}
+
+.day-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.day-form-header h5 {
+  font-family: 'Playfair Display', serif;
+  color: var(--gold);
+  font-size: 1.1rem;
+}
+
+.day-form-header .day-fecha {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.btn-add-day {
+  background: rgba(140,101,24,0.05);
+  border: 1px dashed var(--gold);
+  color: var(--gold);
+  padding: 14px;
+  border-radius: 12px;
+  width: 100%;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: background 0.2s;
+  margin-bottom: 15px;
+}
+
+.btn-add-day:hover { background: rgba(140,101,24,0.1); }
+
+.btn-remove-day {
+  background: transparent;
+  border: none;
+  color: #c0392b;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.btn-remove-day:hover { background: rgba(192,57,43,0.15); }
+
+.admin-btn-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+.admin-btn {
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  border: none;
+  transition: transform 0.2s;
+}
+
+.admin-btn:hover { transform: scale(1.03); }
+
+.admin-btn.save {
+  background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+  color: #fff;
+}
+
+.admin-btn.reset {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+/* ORDERS LOG */
+.orders-log { margin-top: 30px; }
+.orders-log h3 { margin-bottom: 15px; }
+
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.orders-table th {
+  background: rgba(140,101,24,0.1);
+  color: var(--gold);
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.orders-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--white);
+}
+
+.orders-table tr:last-child td { border-bottom: none; }
+
+.orders-table .total-row {
+  background: rgba(140,101,24,0.08);
+  font-weight: 700;
+}
+
+.no-orders {
+  text-align: center;
+  color: var(--muted);
+  padding: 30px;
+  font-size: 0.9rem;
+}
+
+.btn-export {
+  background: var(--green-dark);
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: transform 0.2s;
+}
+
+.btn-export:hover { transform: scale(1.03); }
+
+.btn-clear-orders {
+  background: #c0392b;
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: transform 0.2s;
+}
+
+.btn-clear-orders:hover { transform: scale(1.03); }
+
+/* TOAST */
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-80px);
+  background: var(--green);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  z-index: 300;
+  transition: transform 0.3s ease;
+  white-space: nowrap;
+}
+
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* RESPONSIVE */
+@media (max-width: 600px) {
+  .header h1 { font-size: 1.6rem; }
+  .menu-grid { grid-template-columns: 1fr; padding: 15px; gap: 15px; }
+  .summary-bar { flex-direction: column; gap: 10px; padding: 12px 15px; }
+  .modal { padding: 20px; }
+  .form-row { flex-direction: column; }
+  .form-group { min-width: 100%; }
+}
+
+body { padding-bottom: 80px; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- ADMIN TOGGLE -->
+<div class="admin-toggle">
+  <button onclick="toggleAdmin()">Admin</button>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">
+    <h1><span>CLUB</span> YAMA</h1>
+  </div>
+  <div class="header-sub">Ambrosia &middot; Menu Semanal</div>
+  <div class="menu-info" id="menuInfo"></div>
+  <div class="sync-status" id="syncStatus">
+    <span class="sync-dot loading"></span> Cargando...
+  </div>
+</div>
+
+<!-- NOMBRE -->
+<div class="nombre-section">
+  <label>Tu nombre</label>
+  <input type="text" id="nombreInput" placeholder="Escribe tu nombre para hacer tu pedido" />
+</div>
+
+<!-- WATER NOTE -->
+<div class="water-note">* Incluye agua del dia</div>
+
+<!-- MENU GRID -->
+<div class="menu-grid" id="menuGrid"></div>
+
+<!-- SUMMARY BAR -->
+<div class="summary-bar" id="summaryBar">
+  <div class="summary-total" id="summaryText"></div>
+  <button class="btn-copy" onclick="copiarResumen()">Copiar</button>
+  <button class="btn-send" onclick="enviarPedido()">Enviar Pedido</button>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="check-icon">&#10003;</div>
+    <h3>Pedido Registrado</h3>
+    <div class="summary-text" id="modalSummary"></div>
+    <div class="btn-row">
+      <button class="btn-whatsapp" onclick="enviarWhatsApp()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Enviar por WhatsApp
+      </button>
+      <button class="btn-close" onclick="cerrarModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="admin-panel" id="adminPanel">
+  <h3>Configurar Menu de la Semana</h3>
+
+  <!-- WEEK INFO -->
+  <div class="admin-form-section">
+    <h4>Datos de la Semana</h4>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Mes</label>
+        <select id="adminMes">
+          <option>Enero</option><option>Febrero</option><option>Marzo</option>
+          <option>Abril</option><option>Mayo</option><option>Junio</option>
+          <option>Julio</option><option>Agosto</option><option>Septiembre</option>
+          <option>Octubre</option><option>Noviembre</option><option>Diciembre</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Semana #</label>
+        <input type="number" id="adminSemana" min="1" max="5" value="1" />
+      </div>
+      <div class="form-group">
+        <label>Ano</label>
+        <input type="number" id="adminAnio" min="2024" max="2030" value="2026" />
+      </div>
+    </div>
+  </div>
+
+  <!-- DAYS FORM -->
+  <div class="admin-form-section">
+    <h4>Menu por Dia</h4>
+    <div id="daysFormContainer"></div>
+    <button class="btn-add-day" onclick="addDayForm()">+ Agregar dia</button>
+  </div>
+
+  <div class="admin-btn-row">
+    <button class="admin-btn save" onclick="guardarMenu()">Guardar y Publicar Menu</button>
+    <button class="admin-btn reset" onclick="resetMenu()">Restaurar Original</button>
+  </div>
+
+  <!-- ORDERS LOG -->
+  <div class="orders-log">
+    <h3>Pedidos Recibidos</h3>
+    <div class="admin-btn-row" style="margin-bottom:15px;">
+      <button class="btn-export" onclick="exportarCSV()">Exportar CSV</button>
+      <button class="btn-clear-orders" onclick="limpiarPedidos()">Limpiar Pedidos</button>
+    </div>
+    <div id="ordersContainer"></div>
+  </div>
+</div>
+
+<script>
+// ─── JSONBIN CONFIG ───
+const BIN_ID = "6a1088996877513b27b6bbed";
+const API_KEY = "$2a$10$r.b1s1t/N/QaaWvbwuJCCu5EzYjeVlj5kvPMUe0fJYyj9rPPwum/S";
+const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+// ─── DEFAULT MENU DATA ───
+const DEFAULT_MENU = {
+  mes: "Mayo",
+  semana: 4,
+  anio: 2026,
+  dias: [
+    {
+      dia: "Lunes", fecha: 25,
+      entrada: "Espaguetin chino",
+      platoFuerte: "Costilla agridulce",
+      complemento: "Ensalada de manzana",
+      postre: "Paleta de platano con chocolate"
+    },
+    {
+      dia: "Martes", fecha: 26,
+      entrada: "Pozole",
+      platoFuerte: "Tostadas de pata",
+      complemento: "",
+      postre: "Gelatina frutal"
+    },
+    {
+      dia: "Miercoles", fecha: 27,
+      entrada: "Crema de brocoli",
+      platoFuerte: "Bistec encebollado",
+      complemento: "Papas salteadas",
+      postre: "Trufas de galleta Maria y nuez"
+    },
+    {
+      dia: "Jueves", fecha: 28,
+      entrada: "Caldo de verduras",
+      platoFuerte: "Cerdo con calabacitas",
+      complemento: "Frijoles de la olla",
+      postre: "Crepas rellenas de mermelada de guayaba"
+    }
+  ]
+};
+
+// ─── STATE ───
+let menuData = JSON.parse(JSON.stringify(DEFAULT_MENU));
+let ordersData = [];
+let quantities = {};
+
+// ─── JSONBIN SYNC ───
+function setSyncStatus(state, msg) {
+  const el = document.getElementById('syncStatus');
+  const dot = state === 'ok' ? '' : state === 'loading' ? ' loading' : ' error';
+  el.innerHTML = `<span class="sync-dot${dot}"></span> ${msg}`;
+}
+
+async function loadFromCloud() {
+  setSyncStatus('loading', 'Cargando menu...');
+  try {
+    const res = await fetch(BIN_URL + '/latest', {
+      headers: { 'X-Master-Key': API_KEY }
+    });
+    if (!res.ok) throw new Error('Error ' + res.status);
+    const json = await res.json();
+    const data = json.record;
+
+    if (data && data.menu && data.menu.dias) {
+      menuData = data.menu;
+    }
+    if (data && Array.isArray(data.orders)) {
+      ordersData = data.orders;
+    }
+    setSyncStatus('ok', 'Sincronizado');
+    return true;
+  } catch(e) {
+    console.error('Load error:', e);
+    setSyncStatus('error', 'Sin conexion - modo local');
+    return false;
+  }
+}
+
+async function saveToCloud() {
+  setSyncStatus('loading', 'Guardando...');
+  try {
+    const res = await fetch(BIN_URL, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': API_KEY
+      },
+      body: JSON.stringify({ menu: menuData, orders: ordersData })
+    });
+    if (!res.ok) throw new Error('Error ' + res.status);
+    setSyncStatus('ok', 'Sincronizado');
+    return true;
+  } catch(e) {
+    console.error('Save error:', e);
+    setSyncStatus('error', 'Error al guardar');
+    return false;
+  }
+}
+
+// ─── RENDER MENU ───
+function renderMenu() {
+  const info = document.getElementById('menuInfo');
+  info.innerHTML = `
+    <span class="badge">Mes: ${menuData.mes}</span>
+    <span class="badge">Semana ${menuData.semana}</span>
+    <span class="badge">Ano ${menuData.anio}</span>
+  `;
+
+  const grid = document.getElementById('menuGrid');
+  grid.innerHTML = '';
+
+  menuData.dias.forEach((d, i) => {
+    quantities[i] = quantities[i] || 0;
+
+    const card = document.createElement('div');
+    card.className = 'day-card';
+    card.innerHTML = `
+      <div class="day-header">
+        <h2>${d.dia}</h2>
+        <div class="date">${d.fecha} de ${menuData.mes}</div>
+      </div>
+      <div class="meal-section">
+        <div class="meal-type">Entrada</div>
+        <div class="meal-name">${d.entrada}</div>
+      </div>
+      <div class="meal-section">
+        <div class="meal-type">Plato Fuerte</div>
+        <div class="meal-name">${d.platoFuerte}</div>
+        ${d.complemento ? `<div class="meal-complement">${d.complemento}</div>` : ''}
+      </div>
+      <div class="meal-section">
+        <div class="meal-type">Postre</div>
+        <div class="meal-name">${d.postre}</div>
+      </div>
+      <div class="day-order">
+        <div class="order-row">
+          <span class="order-label">Comidas:</span>
+          <div class="qty-control">
+            <button class="qty-btn" onclick="changeQty(${i}, -1)">-</button>
+            <div class="qty-value ${quantities[i] > 0 ? 'active' : ''}" id="qty-${i}">${quantities[i]}</div>
+            <button class="qty-btn" onclick="changeQty(${i}, 1)">+</button>
+          </div>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  updateSummary();
+}
+
+function changeQty(dayIndex, delta) {
+  quantities[dayIndex] = Math.max(0, (quantities[dayIndex] || 0) + delta);
+  const el = document.getElementById(`qty-${dayIndex}`);
+  el.textContent = quantities[dayIndex];
+  el.className = 'qty-value' + (quantities[dayIndex] > 0 ? ' active' : '');
+  updateSummary();
+}
+
+function updateSummary() {
+  const total = Object.values(quantities).reduce((a, b) => a + b, 0);
+  const bar = document.getElementById('summaryBar');
+  const text = document.getElementById('summaryText');
+
+  if (total > 0) {
+    bar.classList.add('visible');
+    const detalles = menuData.dias
+      .map((d, i) => quantities[i] > 0 ? `${d.dia}: ${quantities[i]}` : null)
+      .filter(Boolean).join(' | ');
+    text.innerHTML = `<strong>${total}</strong> comida${total !== 1 ? 's' : ''} &middot; ${detalles}`;
+  } else {
+    bar.classList.remove('visible');
+  }
+}
+
+function buildResumen() {
+  const nombre = document.getElementById('nombreInput').value.trim() || 'Sin nombre';
+  const total = Object.values(quantities).reduce((a, b) => a + b, 0);
+
+  let lines = [];
+  lines.push(`PEDIDO - CLUB YAMA`);
+  lines.push(`Semana ${menuData.semana} de ${menuData.mes} ${menuData.anio}`);
+  lines.push(`Nombre: ${nombre}`);
+  lines.push(`---`);
+
+  menuData.dias.forEach((d, i) => {
+    if (quantities[i] > 0) {
+      lines.push(`${d.dia} ${d.fecha}: ${quantities[i]} comida${quantities[i] !== 1 ? 's' : ''}`);
+      lines.push(`  Entrada: ${d.entrada}`);
+      lines.push(`  Plato: ${d.platoFuerte}${d.complemento ? ' + ' + d.complemento : ''}`);
+      lines.push(`  Postre: ${d.postre}`);
+    }
+  });
+
+  lines.push(`---`);
+  lines.push(`Total: ${total} comida${total !== 1 ? 's' : ''}`);
+  return lines.join('\n');
+}
+
+function copiarResumen() {
+  const nombre = document.getElementById('nombreInput').value.trim();
+  if (!nombre) {
+    showToast('Escribe tu nombre primero');
+    document.getElementById('nombreInput').focus();
+    return;
+  }
+  navigator.clipboard.writeText(buildResumen()).then(() => showToast('Copiado al portapapeles'));
+}
+
+async function enviarPedido() {
+  const nombre = document.getElementById('nombreInput').value.trim();
+  if (!nombre) {
+    showToast('Escribe tu nombre primero');
+    document.getElementById('nombreInput').focus();
+    return;
+  }
+
+  const total = Object.values(quantities).reduce((a, b) => a + b, 0);
+  if (total === 0) return;
+
+  const resumen = buildResumen();
+
+  const order = {
+    nombre,
+    fecha: new Date().toISOString(),
+    total,
+    detalle: {}
+  };
+  menuData.dias.forEach((d, i) => {
+    if (quantities[i] > 0) {
+      order.detalle[d.dia] = quantities[i];
+    }
+  });
+
+  ordersData.push(order);
+  await saveToCloud();
+
+  document.getElementById('modalSummary').textContent = resumen;
+  document.getElementById('modalBg').classList.add('open');
+  renderOrders();
+}
+
+function enviarWhatsApp() {
+  const text = encodeURIComponent(buildResumen());
+  window.open(`https://wa.me/?text=${text}`, '_blank');
+}
+
+function cerrarModal() {
+  document.getElementById('modalBg').classList.remove('open');
+  Object.keys(quantities).forEach(k => quantities[k] = 0);
+  renderMenu();
+}
+
+// ─── ADMIN ───
+let adminVisible = false;
+
+function toggleAdmin() {
+  adminVisible = !adminVisible;
+  document.getElementById('adminPanel').classList.toggle('visible', adminVisible);
+  if (adminVisible) {
+    populateAdminForm();
+    renderOrders();
+  }
+}
+
+function populateAdminForm() {
+  document.getElementById('adminMes').value = menuData.mes;
+  document.getElementById('adminSemana').value = menuData.semana;
+  document.getElementById('adminAnio').value = menuData.anio;
+
+  const container = document.getElementById('daysFormContainer');
+  container.innerHTML = '';
+  menuData.dias.forEach((d, i) => addDayForm(d));
+}
+
+function addDayForm(data) {
+  const container = document.getElementById('daysFormContainer');
+  const idx = container.children.length;
+  const d = data || { dia: 'Lunes', fecha: 1, entrada: '', platoFuerte: '', complemento: '', postre: '' };
+
+  const card = document.createElement('div');
+  card.className = 'day-form-card';
+  card.innerHTML = `
+    <div class="day-form-header">
+      <h5>${d.dia} ${d.fecha}</h5>
+      <button class="btn-remove-day" onclick="this.closest('.day-form-card').remove()" title="Quitar dia">&times;</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="max-width:160px">
+        <label>Dia</label>
+        <select class="df-dia">
+          <option ${d.dia==='Lunes'?'selected':''}>Lunes</option>
+          <option ${d.dia==='Martes'?'selected':''}>Martes</option>
+          <option ${d.dia==='Miercoles'?'selected':''}>Miercoles</option>
+          <option ${d.dia==='Jueves'?'selected':''}>Jueves</option>
+          <option ${d.dia==='Viernes'?'selected':''}>Viernes</option>
+        </select>
+      </div>
+      <div class="form-group" style="max-width:100px">
+        <label>Fecha #</label>
+        <input type="number" class="df-fecha" min="1" max="31" value="${d.fecha}" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Entrada</label>
+        <input type="text" class="df-entrada" placeholder="Ej: Crema de brocoli" value="${d.entrada}" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Plato Fuerte</label>
+        <input type="text" class="df-plato" placeholder="Ej: Bistec encebollado" value="${d.platoFuerte}" />
+      </div>
+      <div class="form-group">
+        <label>Complemento (opcional)</label>
+        <input type="text" class="df-comp" placeholder="Ej: Papas salteadas" value="${d.complemento || ''}" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Postre</label>
+        <input type="text" class="df-postre" placeholder="Ej: Gelatina frutal" value="${d.postre}" />
+      </div>
+    </div>
+  `;
+  container.appendChild(card);
+}
+
+async function guardarMenu() {
+  const mes = document.getElementById('adminMes').value;
+  const semana = parseInt(document.getElementById('adminSemana').value);
+  const anio = parseInt(document.getElementById('adminAnio').value);
+
+  const cards = document.querySelectorAll('.day-form-card');
+  if (cards.length === 0) {
+    showToast('Agrega al menos un dia');
+    return;
+  }
+
+  const dias = [];
+  let valid = true;
+  cards.forEach(card => {
+    const dia = card.querySelector('.df-dia').value;
+    const fecha = parseInt(card.querySelector('.df-fecha').value) || 1;
+    const entrada = card.querySelector('.df-entrada').value.trim();
+    const platoFuerte = card.querySelector('.df-plato').value.trim();
+    const complemento = card.querySelector('.df-comp').value.trim();
+    const postre = card.querySelector('.df-postre').value.trim();
+
+    if (!entrada || !platoFuerte || !postre) {
+      valid = false;
+    }
+
+    dias.push({ dia, fecha, entrada, platoFuerte, complemento, postre });
+  });
+
+  if (!valid) {
+    showToast('Llena todos los campos obligatorios');
+    return;
+  }
+
+  menuData = { mes, semana, anio, dias };
+  ordersData = [];
+  quantities = {};
+
+  const saved = await saveToCloud();
+  if (saved) {
+    showToast('Menu publicado - pedidos reiniciados');
+  } else {
+    showToast('Menu guardado localmente');
+  }
+  renderMenu();
+  renderOrders();
+}
+
+function resetMenu() {
+  menuData = JSON.parse(JSON.stringify(DEFAULT_MENU));
+  populateAdminForm();
+  renderMenu();
+  showToast('Formulario restaurado');
+}
+
+// ─── ORDERS ───
+function renderOrders() {
+  const container = document.getElementById('ordersContainer');
+
+  if (ordersData.length === 0) {
+    container.innerHTML = '<div class="no-orders">Aun no hay pedidos registrados</div>';
+    return;
+  }
+
+  const dayTotals = {};
+  menuData.dias.forEach(d => { dayTotals[d.dia] = 0; });
+
+  let html = '<table class="orders-table"><thead><tr>';
+  html += '<th>Nombre</th><th>Fecha</th>';
+  menuData.dias.forEach(d => { html += `<th>${d.dia.substring(0,3)}</th>`; });
+  html += '<th>Total</th></tr></thead><tbody>';
+
+  ordersData.forEach(o => {
+    html += '<tr>';
+    html += `<td>${o.nombre}</td>`;
+    html += `<td>${new Date(o.fecha).toLocaleDateString('es-MX', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}</td>`;
+    menuData.dias.forEach(d => {
+      const qty = (o.detalle && o.detalle[d.dia]) || 0;
+      dayTotals[d.dia] += qty;
+      html += `<td>${qty || '-'}</td>`;
+    });
+    html += `<td><strong>${o.total}</strong></td></tr>`;
+  });
+
+  const grandTotal = Object.values(dayTotals).reduce((a,b) => a+b, 0);
+  html += '<tr class="total-row"><td colspan="2">TOTAL</td>';
+  menuData.dias.forEach(d => { html += `<td>${dayTotals[d.dia]}</td>`; });
+  html += `<td><strong>${grandTotal}</strong></td></tr>`;
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function exportarCSV() {
+  if (ordersData.length === 0) { showToast('No hay pedidos'); return; }
+
+  let csv = 'Nombre,Fecha,' + menuData.dias.map(d => d.dia).join(',') + ',Total\n';
+
+  ordersData.forEach(o => {
+    csv += `"${o.nombre}","${new Date(o.fecha).toLocaleDateString('es-MX')}"`;
+    menuData.dias.forEach(d => { csv += `,${(o.detalle && o.detalle[d.dia]) || 0}`; });
+    csv += `,${o.total}\n`;
+  });
+
+  const dayTotals = {};
+  menuData.dias.forEach(d => { dayTotals[d.dia] = 0; });
+  ordersData.forEach(o => {
+    menuData.dias.forEach(d => { dayTotals[d.dia] += (o.detalle && o.detalle[d.dia]) || 0; });
+  });
+  const grandTotal = Object.values(dayTotals).reduce((a,b) => a+b, 0);
+  csv += `"TOTAL",""`;
+  menuData.dias.forEach(d => { csv += `,${dayTotals[d.dia]}`; });
+  csv += `,${grandTotal}\n`;
+
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pedidos_semana${menuData.semana}_${menuData.mes}${menuData.anio}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV descargado');
+}
+
+async function limpiarPedidos() {
+  if (confirm('Seguro que quieres borrar todos los pedidos?')) {
+    ordersData = [];
+    await saveToCloud();
+    renderOrders();
+    showToast('Pedidos eliminados');
+  }
+}
+
+// ─── TOAST ───
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── AUTO-REFRESH (poll every 30s for new orders) ───
+setInterval(async () => {
+  if (!adminVisible) return;
+  await loadFromCloud();
+  renderOrders();
+}, 30000);
+
+// ─── INIT ───
+(async function init() {
+  await loadFromCloud();
+  renderMenu();
+})();
+</script>
+</body>
+</html>
