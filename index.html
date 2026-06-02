@@ -739,7 +739,7 @@ body { padding-bottom: 80px; }
 </div>
 
 <script>
-// â”€â”€â”€ CONFIG â”€â”€â”€
+// --- CONFIG ---
 const BIN_ID = "6a1088996877513b27b6bbed";
 const API_KEY = "$2a$10$r.b1s1t/N/QaaWvbwuJCCu5EzYjeVlj5kvPMUe0fJYyj9rPPwum/S";
 const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
@@ -756,14 +756,14 @@ const DEFAULT_MENU = {
   ]
 };
 
-// â”€â”€â”€ STATE â”€â”€â”€
+// --- STATE ---
 let menuData = JSON.parse(JSON.stringify(DEFAULT_MENU));
 let ordersData = [];
 let quantities = {};
 let selections = {};
 let adminAuth = false;
 
-// â”€â”€â”€ SYNC â”€â”€â”€
+// --- SYNC ---
 function setSyncStatus(s, m) {
   const el = document.getElementById('syncStatus');
   el.innerHTML = `<span class="sync-dot${s==='ok'?'':s==='loading'?' loading':' error'}"></span> ${m}`;
@@ -796,7 +796,7 @@ async function saveToCloud() {
   } catch(e) { setSyncStatus('error', 'Error al guardar'); return false; }
 }
 
-// â”€â”€â”€ RENDER â”€â”€â”€
+// --- RENDER ---
 function renderMenu() {
   document.getElementById('menuInfo').innerHTML = `
     <span class="badge">Mes: ${menuData.mes}</span>
@@ -960,7 +960,7 @@ function cerrarModal() {
   renderMenu();
 }
 
-// â”€â”€â”€ ADMIN PIN â”€â”€â”€
+// --- ADMIN PIN ---
 function abrirAdmin() {
   if (adminAuth) { toggleAdmin(); return; }
   document.getElementById('pinModal').classList.add('open');
@@ -995,7 +995,7 @@ function toggleAdmin() {
   if (adminVisible) { populateAdminForm(); renderOrders(); }
 }
 
-// â”€â”€â”€ ADMIN FORM â”€â”€â”€
+// --- ADMIN FORM ---
 function populateAdminForm() {
   document.getElementById('adminMes').value = menuData.mes;
   document.getElementById('adminSemana').value = menuData.semana;
@@ -1105,7 +1105,7 @@ function resetMenu() {
   showToast('Restaurado');
 }
 
-// â”€â”€â”€ WHATSAPP ADMIN â”€â”€â”€
+// --- WHATSAPP ADMIN ---
 function compartirMenuWhatsApp() {
   let msg = `*PROESA - Menu Semanal*\nSemana ${menuData.semana} de ${menuData.mes} ${menuData.anio}\n\n`;
   menuData.dias.forEach(d => {
@@ -1252,8 +1252,8 @@ function renderOrders() {
 function exportarCSV() {
   if (!ordersData.length) { showToast('No hay pedidos'); return; }
 
-  // â”€â”€â”€ Build header â”€â”€â”€
-  let csv = 'No. Empleado,Nombre,Fecha de Pedido';
+  // Build header
+  let csv = 'No. Empleado,Nombre,Fecha,Hora';
   menuData.dias.forEach(d => {
     if (d.platoAlternativo) {
       csv += `,"${d.dia} (Cant.)","${d.dia} (Platillo)"`;
@@ -1263,16 +1263,19 @@ function exportarCSV() {
   });
   csv += ',Total Semana\n';
 
-  // â”€â”€â”€ Sort orders by employee number â”€â”€â”€
+  // Sort orders by employee number
   const sorted = [...ordersData].sort((a, b) => {
     const na = parseInt(a.numEmpleado) || 99999;
     const nb = parseInt(b.numEmpleado) || 99999;
     return na - nb;
   });
 
-  // â”€â”€â”€ Data rows â”€â”€â”€
+  // Data rows
   sorted.forEach(o => {
-    csv += `"${o.numEmpleado || 'S/N'}","${o.nombre}","${new Date(o.fecha).toLocaleDateString('es-MX', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'})}"`;
+    const dt = new Date(o.fecha);
+    const fecha = dt.toLocaleDateString('es-MX', {day:'2-digit', month:'2-digit', year:'numeric'});
+    const hora = dt.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
+    csv += `"${o.numEmpleado || 'S/N'}","${o.nombre}","${fecha}","${hora}"`;
     menuData.dias.forEach(d => {
       const qty = (o.detalle && o.detalle[d.dia]) || 0;
       if (d.platoAlternativo) {
@@ -1285,22 +1288,22 @@ function exportarCSV() {
     csv += `,${o.total}\n`;
   });
 
-  // â”€â”€â”€ Totals row â”€â”€â”€
+  // Totals row
   const dayTotals = {};
   menuData.dias.forEach(d => { dayTotals[d.dia] = 0; });
   ordersData.forEach(o => { menuData.dias.forEach(d => { dayTotals[d.dia] += (o.detalle && o.detalle[d.dia]) || 0; }); });
   const gt = Object.values(dayTotals).reduce((a,b) => a+b, 0);
-  csv += `"","TOTAL",""`;
+  csv += `"","TOTAL","",""`;
   menuData.dias.forEach(d => {
     csv += `,${dayTotals[d.dia]}`;
     if (d.platoAlternativo) csv += `,""`;
   });
   csv += `,${gt}\n`;
 
-  // â”€â”€â”€ Option breakdown rows (for days with alternatives) â”€â”€â”€
+  // Option breakdown rows
   const daysWithAlt = menuData.dias.filter(d => d.platoAlternativo);
   if (daysWithAlt.length > 0) {
-    csv += '\n"","DESGLOSE POR OPCION",""\n';
+    csv += '\n"","DESGLOSE POR OPCION","",""\n';
     daysWithAlt.forEach(d => {
       const opcCounts = {};
       ordersData.forEach(o => {
@@ -1346,7 +1349,7 @@ function showToast(m) {
 // Auto-refresh orders in admin
 setInterval(async () => { if (adminVisible) { await loadFromCloud(); renderOrders(); } }, 30000);
 
-// â”€â”€â”€ INIT â”€â”€â”€
+// --- INIT ---
 (async () => { await loadFromCloud(); renderMenu(); })();
 </script>
 </body>
