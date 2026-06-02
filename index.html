@@ -1443,10 +1443,16 @@ setInterval(async () => { if (adminVisible) { await loadFromCloud(); renderOrder
 const DAY_MAP = { 'lunes':1, 'martes':2, 'miercoles':3, 'miércoles':3, 'jueves':4, 'viernes':5, 'sabado':6, 'sábado':6, 'domingo':0 };
 
 function isDayPassed(dayName) {
-  const today = new Date().getDay(); // 0=Sun, 1=Mon...
+  const now = new Date();
+  const today = now.getDay(); // 0=Sun, 1=Mon...
+  const hour = now.getHours();
   const dayNum = DAY_MAP[dayName.toLowerCase().trim()];
   if (dayNum === undefined) return false;
-  return dayNum < today;
+  // Dias anteriores siempre bloqueados
+  if (dayNum < today) return true;
+  // El mismo dia se bloquea despues de las 10 AM
+  if (dayNum === today && hour >= 10) return true;
+  return false;
 }
 
 // --- ORDER LOCK (10 AM - 5 PM) ---
