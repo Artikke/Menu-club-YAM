@@ -624,10 +624,13 @@ body { padding-bottom: 80px; }
   </div>
 </div>
 
-<!-- NOMBRE -->
+<!-- DATOS EMPLEADO -->
 <div class="nombre-section">
   <label>Tu nombre</label>
-  <input type="text" id="nombreInput" placeholder="Escribe tu nombre para hacer tu pedido" />
+  <input type="text" id="nombreInput" placeholder="Escribe tu nombre completo" />
+  <div style="height:10px"></div>
+  <label>No. de empleado</label>
+  <input type="text" id="numEmpleado" placeholder="Ej: 1234" inputmode="numeric" />
 </div>
 
 <div class="water-note">* Incluye agua del dia</div>
@@ -874,8 +877,9 @@ function updateSummary() {
 
 function buildResumen() {
   const nombre = document.getElementById('nombreInput').value.trim() || 'Sin nombre';
+  const numEmp = document.getElementById('numEmpleado').value.trim();
   const total = Object.values(quantities).reduce((a,b)=>a+b, 0);
-  let lines = [`PEDIDO - PROESA`, `Semana ${menuData.semana} de ${menuData.mes} ${menuData.anio}`, `Nombre: ${nombre}`, `---`];
+  let lines = [`PEDIDO - PROESA`, `Semana ${menuData.semana} de ${menuData.mes} ${menuData.anio}`, `Nombre: ${nombre}${numEmp ? ' (#' + numEmp + ')' : ''}`, `---`];
 
   menuData.dias.forEach((d, i) => {
     if (quantities[i] > 0) {
@@ -900,11 +904,13 @@ function copiarResumen() {
 
 async function enviarPedido() {
   const nombre = document.getElementById('nombreInput').value.trim();
+  const numEmp = document.getElementById('numEmpleado').value.trim();
   if (!nombre) { showToast('Escribe tu nombre'); document.getElementById('nombreInput').focus(); return; }
+  if (!numEmp) { showToast('Escribe tu numero de empleado'); document.getElementById('numEmpleado').focus(); return; }
   const total = Object.values(quantities).reduce((a,b)=>a+b, 0);
   if (total === 0) return;
 
-  const order = { nombre, fecha: new Date().toISOString(), total, detalle: {}, opciones: {} };
+  const order = { nombre, numEmpleado: numEmp, fecha: new Date().toISOString(), total, detalle: {}, opciones: {} };
   menuData.dias.forEach((d, i) => {
     if (quantities[i] > 0) {
       order.detalle[d.dia] = quantities[i];
@@ -1141,7 +1147,7 @@ function enviarOrdenCocinera() {
       if (o.opciones && o.opciones[d.dia]) txt += `(${o.opciones[d.dia].substring(0,15)})`;
       return txt;
     }).join(', ');
-    msg += `${o.nombre}: ${dias} (${o.total})\n`;
+    msg += `${o.nombre}${o.numEmpleado ? ' #'+o.numEmpleado : ''}: ${dias} (${o.total})\n`;
   });
 
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
@@ -1156,13 +1162,14 @@ function renderOrders() {
   menuData.dias.forEach(d => { dayTotals[d.dia] = 0; });
 
   let html = '<div class="orders-table-wrap"><table class="orders-table"><thead><tr>';
-  html += '<th>Nombre</th><th>Hora</th>';
+  html += '<th>Nombre</th><th>No. Emp</th><th>Hora</th>';
   menuData.dias.forEach(d => { html += `<th>${d.dia.substring(0,3)}</th>`; });
   html += '<th>Total</th></tr></thead><tbody>';
 
   ordersData.forEach(o => {
     html += '<tr>';
     html += `<td>${o.nombre}</td>`;
+    html += `<td>${o.numEmpleado || '-'}</td>`;
     html += `<td>${new Date(o.fecha).toLocaleDateString('es-MX',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</td>`;
     menuData.dias.forEach(d => {
       const qty = (o.detalle && o.detalle[d.dia]) || 0;
@@ -1177,7 +1184,7 @@ function renderOrders() {
   });
 
   const gt = Object.values(dayTotals).reduce((a,b)=>a+b,0);
-  html += '<tr class="total-row"><td colspan="2">TOTAL</td>';
+  html += '<tr class="total-row"><td colspan="3">TOTAL</td>';
   menuData.dias.forEach(d => { html += `<td>${dayTotals[d.dia]}</td>`; });
   html += `<td><strong>${gt}</strong></td></tr>`;
   html += '</tbody></table></div>';
@@ -1187,7 +1194,7 @@ function renderOrders() {
 function exportarCSV() {
   if (!ordersData.length) { showToast('No hay pedidos'); return; }
 
-  let csv = 'Nombre,Fecha';
+  let csv = 'Nombre,No. Empleado,Fecha';
   menuData.dias.forEach(d => {
     csv += `,${d.dia}`;
     if (d.platoAlternativo) csv += `,${d.dia} Opcion`;
@@ -1195,7 +1202,7 @@ function exportarCSV() {
   csv += ',Total\n';
 
   ordersData.forEach(o => {
-    csv += `"${o.nombre}","${new Date(o.fecha).toLocaleDateString('es-MX')}"`;
+    csv += `"${o.nombre}","${o.numEmpleado || ''}","${new Date(o.fecha).toLocaleDateString('es-MX')}"`;
     menuData.dias.forEach(d => {
       csv += `,${(o.detalle && o.detalle[d.dia]) || 0}`;
       if (d.platoAlternativo) {
@@ -1209,7 +1216,7 @@ function exportarCSV() {
   menuData.dias.forEach(d => { dayTotals[d.dia] = 0; });
   ordersData.forEach(o => { menuData.dias.forEach(d => { dayTotals[d.dia] += (o.detalle && o.detalle[d.dia]) || 0; }); });
   const gt = Object.values(dayTotals).reduce((a,b)=>a+b,0);
-  csv += `"TOTAL",""`;
+  csv += `"TOTAL","",""`;
   menuData.dias.forEach(d => { csv += `,${dayTotals[d.dia]}`; if (d.platoAlternativo) csv += `,""`;  });
   csv += `,${gt}\n`;
 
