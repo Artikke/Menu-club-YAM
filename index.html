@@ -1173,10 +1173,10 @@ function enviarOrdenCocinera() {
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
-// â”€â”€â”€ ORDERS TABLE â”€â”€â”€
+// --- ORDERS TABLE ---
 function renderOrders() {
   const c = document.getElementById('ordersContainer');
-  if (!ordersData.length) { c.innerHTML = '<div class="no-orders">Aun no hay pedidos</div>'; return; }
+  if (!ordersData.length) { c.innerHTML = '<div class=”no-orders”>Aun no hay pedidos</div>'; return; }
 
   const dayTotals = {};
   menuData.dias.forEach(d => { dayTotals[d.dia] = 0; });
@@ -1192,7 +1192,7 @@ function renderOrders() {
   html += '<th>No.</th><th>Nombre</th>';
   menuData.dias.forEach(d => {
     const label = d.dia.substring(0,3);
-    html += d.platoAlternativo ? `<th>${label} ðŸ½ï¸</th>` : `<th>${label}</th>`;
+    html += d.platoAlternativo ? `<th>${label} *</th>` : `<th>${label}</th>`;
   });
   html += '<th>Total</th></tr></thead><tbody>';
 
@@ -1204,14 +1204,14 @@ function renderOrders() {
       const qty = (o.detalle && o.detalle[d.dia]) || 0;
       dayTotals[d.dia] += qty;
       if (qty === 0) {
-        html += '<td style="color:#ccc">â€”</td>';
+        html += '<td style="color:#ccc">-</td>';
       } else if (d.platoAlternativo && o.opciones && o.opciones[d.dia]) {
         const isAlt = o.opciones[d.dia] !== d.platoFuerte;
         const color = isAlt ? '#e67e22' : '#27ae60';
-        const icon = isAlt ? 'ðŸ”¸' : 'ðŸ”¹';
+        const icon = isAlt ? '&#9670;' : '&#9671;';
         html += `<td>${icon} ${qty}<br><small style="color:${color};font-size:10px">${o.opciones[d.dia].substring(0,18)}</small></td>`;
       } else {
-        html += `<td>âœ“ ${qty}</td>`;
+        html += `<td>${qty}</td>`;
       }
     });
     html += `<td><strong>${o.total}</strong></td></tr>`;
