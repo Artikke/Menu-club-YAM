@@ -685,8 +685,8 @@ body { padding-bottom: 80px; }
 <div class="lock-overlay" id="lockOverlay">
   <div class="lock-icon">&#128274;</div>
   <h3>Pedidos Cerrados</h3>
-  <p>El horario de pedidos ha terminado por hoy.<br>
-  Se abren nuevamente a las <span class="lock-time">5:00 PM</span></p>
+  <p id="lockMsg">El horario de pedidos ha terminado.<br>
+  Horario: <span class="lock-time">7:00 - 10:00 AM</span> y <span class="lock-time">5:00 - 12:00 PM</span></p>
 </div>
 
 <!-- DATOS EMPLEADO -->
@@ -1455,12 +1455,17 @@ function isDayPassed(dayName) {
   return false;
 }
 
-// --- ORDER LOCK (10 AM - 5 PM) ---
+// --- ORDER LOCK ---
+// Abierto: Lunes a Viernes de 7 AM a 10 AM y de 5 PM a 11:59 PM
+// Fines de semana: cerrado
 function isOrderingOpen() {
   const now = new Date();
+  const day = now.getDay(); // 0=Dom, 6=Sab
   const hour = now.getHours();
-  // Open: before 10 AM or at/after 5 PM (17:00)
-  return hour < 10 || hour >= 17;
+  // Fines de semana cerrado
+  if (day === 0 || day === 6) return false;
+  // Entre semana: abierto 7-10 AM y 5-midnight
+  return (hour >= 7 && hour < 10) || hour >= 17;
 }
 
 function checkOrderLock() {
