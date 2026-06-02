@@ -5,20 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>PROESA - Menu Semanal</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg: #f5f5f0;
+  --bg: #f0f4f8;
   --card: #ffffff;
-  --gold: #b8862e;
-  --gold-light: #d4a053;
-  --gold-dark: #8c6518;
+  --gold: #1a5276;
+  --gold-light: #2980b9;
+  --gold-dark: #0e6655;
+  --teal: #0f9b8e;
+  --teal-light: #1abc9c;
   --white: #1e1e1e;
-  --muted: #777;
-  --green: #4caf50;
-  --green-dark: #388e3c;
-  --border: rgba(140,101,24,0.15);
-  --shadow: 0 8px 32px rgba(0,0,0,0.08);
+  --muted: #7f8c8d;
+  --green: #0f9b8e;
+  --green-dark: #0e6655;
+  --border: rgba(26,82,118,0.12);
+  --shadow: 0 8px 32px rgba(26,82,118,0.1);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -32,25 +34,39 @@ body {
 
 .header {
   text-align: center;
-  padding: 30px 20px 20px;
-  border-bottom: 1px solid var(--border);
+  padding: 24px 20px 18px;
+  background: linear-gradient(135deg, #1a5276 0%, #0f9b8e 100%);
+  color: #fff;
 }
+
+.header-logo {
+  width: 60px; height: 60px;
+  margin: 0 auto 8px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+.header-logo img, .header-logo svg { width: 100%; height: 100%; }
 
 .header h1 {
-  font-family: 'Playfair Display', serif;
-  font-size: 2.2rem;
-  color: var(--gold);
-  letter-spacing: 2px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.8rem;
+  color: #fff;
+  letter-spacing: 3px;
+  font-weight: 800;
 }
 
-.header h1 span { color: var(--white); font-weight: 400; }
+.header h1 span { color: #fff; font-weight: 800; }
 
 .header-sub {
-  font-size: 0.85rem;
-  color: var(--muted);
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.85);
   letter-spacing: 4px;
   text-transform: uppercase;
-  margin-top: 4px;
+  margin-top: 2px;
+  font-weight: 500;
 }
 
 .menu-info {
@@ -63,9 +79,9 @@ body {
 }
 
 .menu-info .badge {
-  background: rgba(140,101,24,0.08);
-  border: 1px solid var(--border);
-  color: var(--gold-light);
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
   padding: 6px 16px;
   border-radius: 20px;
   font-size: 0.85rem;
@@ -77,7 +93,7 @@ body {
   align-items: center;
   gap: 6px;
   font-size: 0.75rem;
-  color: var(--muted);
+  color: rgba(255,255,255,0.7);
   margin-top: 10px;
 }
 
@@ -88,7 +104,7 @@ body {
   display: inline-block;
 }
 
-.sync-dot.loading { background: var(--gold); animation: pulse 1s infinite; }
+.sync-dot.loading { background: var(--teal); animation: pulse 1s infinite; }
 .sync-dot.error { background: #c0392b; }
 
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
@@ -147,16 +163,17 @@ body {
 .day-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
 
 .day-header {
-  background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+  background: linear-gradient(135deg, var(--gold), var(--teal));
   padding: 14px 20px;
   text-align: center;
 }
 
 .day-header h2 {
-  font-family: 'Playfair Display', serif;
-  font-size: 1.3rem;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.2rem;
   color: #fff;
   margin-bottom: 2px;
+  font-weight: 700;
 }
 
 .day-header .date { font-size: 0.8rem; color: rgba(255,255,255,0.8); }
@@ -189,7 +206,7 @@ body {
 /* ALTERNATIVA SELECTOR */
 .alt-section {
   padding: 10px 18px;
-  background: rgba(140,101,24,0.04);
+  background: rgba(15,155,142,0.04);
   border-top: 1px solid var(--border);
 }
 
@@ -215,10 +232,10 @@ body {
   transition: border-color 0.2s, background 0.2s;
 }
 
-.alt-option:hover { border-color: var(--gold-light); }
-.alt-option.selected { border-color: var(--gold); background: rgba(140,101,24,0.06); }
+.alt-option:hover { border-color: var(--teal); }
+.alt-option.selected { border-color: var(--teal); background: rgba(15,155,142,0.06); }
 
-.alt-option input[type="radio"] { accent-color: var(--gold); }
+.alt-option input[type="radio"] { accent-color: var(--teal); }
 
 .alt-option-text { font-size: 0.85rem; color: var(--white); }
 .alt-option-text small { color: var(--muted); font-size: 0.75rem; }
@@ -226,7 +243,7 @@ body {
 /* ORDER ROW */
 .day-order {
   padding: 14px 18px;
-  background: rgba(140,101,24,0.04);
+  background: rgba(26,82,118,0.03);
   border-top: 1px solid var(--border);
 }
 
@@ -262,7 +279,7 @@ body {
   font-weight: 700;
 }
 
-.qty-btn:hover { background: rgba(140,101,24,0.1); }
+.qty-btn:hover { background: rgba(15,155,142,0.1); }
 
 .qty-value {
   width: 40px;
@@ -308,7 +325,7 @@ body {
 .summary-total strong { color: var(--gold); }
 
 .btn-send {
-  background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+  background: linear-gradient(135deg, var(--gold), var(--teal));
   color: #fff; border: none;
   padding: 12px 30px; border-radius: 10px;
   font-size: 0.95rem; font-weight: 600;
@@ -316,7 +333,7 @@ body {
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.btn-send:hover { transform: scale(1.03); box-shadow: 0 4px 15px rgba(212,160,83,0.3); }
+.btn-send:hover { transform: scale(1.03); box-shadow: 0 4px 15px rgba(15,155,142,0.3); }
 
 .btn-copy {
   background: transparent;
@@ -348,7 +365,7 @@ body {
   box-shadow: 0 20px 60px rgba(0,0,0,0.15);
 }
 
-.modal h3 { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 1.5rem; margin-bottom: 15px; }
+.modal h3 { font-family: 'Montserrat', sans-serif; color: var(--gold); font-size: 1.5rem; margin-bottom: 15px; font-weight: 700; }
 .modal .check-icon { font-size: 3rem; margin-bottom: 10px; }
 
 .modal .summary-text {
@@ -408,7 +425,7 @@ body {
   box-shadow: 0 20px 60px rgba(0,0,0,0.15);
 }
 
-.pin-box h3 { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 1.3rem; margin-bottom: 5px; }
+.pin-box h3 { font-family: 'Montserrat', sans-serif; color: var(--gold); font-size: 1.3rem; margin-bottom: 5px; font-weight: 700; }
 .pin-box p { color: var(--muted); font-size: 0.85rem; margin-bottom: 18px; }
 
 .pin-box input {
@@ -430,18 +447,19 @@ body {
 .admin-toggle { position: fixed; top: 15px; right: 15px; z-index: 50; }
 
 .admin-toggle button {
-  background: rgba(140,101,24,0.08);
+  background: rgba(26,82,118,0.08);
   border: 1px solid var(--border);
   color: var(--gold);
   padding: 8px 16px; border-radius: 8px;
   font-size: 0.75rem; cursor: pointer;
   font-family: 'Inter', sans-serif;
   letter-spacing: 1px; text-transform: uppercase;
+  font-weight: 600;
 }
 
 .admin-panel { display: none; max-width: 900px; margin: 20px auto; padding: 0 20px 100px; }
 .admin-panel.visible { display: block; }
-.admin-panel h3 { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 1.3rem; margin-bottom: 15px; text-align: center; }
+.admin-panel h3 { font-family: 'Montserrat', sans-serif; color: var(--gold); font-size: 1.3rem; margin-bottom: 15px; text-align: center; font-weight: 700; }
 
 .admin-form-section {
   background: var(--card);
@@ -476,7 +494,7 @@ body {
 .form-group input::placeholder { color: #aaa; }
 
 .day-form-card {
-  background: rgba(140,101,24,0.04);
+  background: rgba(26,82,118,0.03);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px; margin-bottom: 15px;
@@ -489,10 +507,10 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-.day-form-header h5 { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 1.1rem; }
+.day-form-header h5 { font-family: 'Montserrat', sans-serif; color: var(--gold); font-size: 1.1rem; font-weight: 700; }
 
 .btn-add-day {
-  background: rgba(140,101,24,0.05);
+  background: rgba(26,82,118,0.04);
   border: 1px dashed var(--gold);
   color: var(--gold);
   padding: 14px; border-radius: 12px;
@@ -517,7 +535,7 @@ body {
 }
 
 .admin-btn:hover { transform: scale(1.03); }
-.admin-btn.save { background: linear-gradient(135deg, var(--gold-dark), var(--gold)); color: #fff; }
+.admin-btn.save { background: linear-gradient(135deg, var(--gold), var(--teal)); color: #fff; }
 .admin-btn.reset { background: transparent; color: var(--muted); border: 1px solid var(--border); }
 
 /* ORDERS */
@@ -534,7 +552,7 @@ body {
 }
 
 .orders-table th {
-  background: rgba(140,101,24,0.1);
+  background: rgba(26,82,118,0.08);
   color: var(--gold); padding: 12px 14px;
   text-align: left; font-size: 0.7rem;
   text-transform: uppercase; letter-spacing: 1px;
@@ -549,7 +567,7 @@ body {
 }
 
 .orders-table tr:last-child td { border-bottom: none; }
-.orders-table .total-row { background: rgba(140,101,24,0.08); font-weight: 700; }
+.orders-table .total-row { background: rgba(26,82,118,0.06); font-weight: 700; }
 
 .no-orders { text-align: center; color: var(--muted); padding: 30px; font-size: 0.9rem; }
 
@@ -616,6 +634,20 @@ body { padding-bottom: 80px; }
 
 <!-- HEADER -->
 <div class="header">
+  <div class="header-logo">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#1a5276"/>
+          <stop offset="100%" style="stop-color:#0f9b8e"/>
+        </linearGradient>
+      </defs>
+      <path d="M50 8 L78 36 L50 64 L22 36 Z" fill="none" stroke="#1a5276" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M50 28 L70 48 L50 68 L30 48 Z" fill="none" stroke="#0f9b8e" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M50 48 L65 63 L50 78 L35 63 Z" fill="url(#g1)" opacity="0.3"/>
+      <text x="50" y="95" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="8" font-weight="700" fill="#1a5276">SOLUCIONES EN SALUD</text>
+    </svg>
+  </div>
   <h1><span>PROESA</span></h1>
   <div class="header-sub">Menu Semanal</div>
   <div class="menu-info" id="menuInfo"></div>
@@ -1161,32 +1193,70 @@ function renderOrders() {
   const dayTotals = {};
   menuData.dias.forEach(d => { dayTotals[d.dia] = 0; });
 
+  // Sort by employee number
+  const sorted = [...ordersData].sort((a, b) => {
+    const na = parseInt(a.numEmpleado) || 99999;
+    const nb = parseInt(b.numEmpleado) || 99999;
+    return na - nb;
+  });
+
   let html = '<div class="orders-table-wrap"><table class="orders-table"><thead><tr>';
-  html += '<th>Nombre</th><th>No. Emp</th><th>Hora</th>';
-  menuData.dias.forEach(d => { html += `<th>${d.dia.substring(0,3)}</th>`; });
+  html += '<th>No.</th><th>Nombre</th>';
+  menuData.dias.forEach(d => {
+    const label = d.dia.substring(0,3);
+    html += d.platoAlternativo ? `<th>${label} 🍽️</th>` : `<th>${label}</th>`;
+  });
   html += '<th>Total</th></tr></thead><tbody>';
 
-  ordersData.forEach(o => {
+  sorted.forEach(o => {
     html += '<tr>';
+    html += `<td style="font-weight:600;color:var(--primary)">${o.numEmpleado || '-'}</td>`;
     html += `<td>${o.nombre}</td>`;
-    html += `<td>${o.numEmpleado || '-'}</td>`;
-    html += `<td>${new Date(o.fecha).toLocaleDateString('es-MX',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</td>`;
     menuData.dias.forEach(d => {
       const qty = (o.detalle && o.detalle[d.dia]) || 0;
       dayTotals[d.dia] += qty;
-      let cell = qty || '-';
-      if (qty > 0 && o.opciones && o.opciones[d.dia]) {
-        cell = `${qty}<br><small style="color:var(--gold)">${o.opciones[d.dia].substring(0,12)}</small>`;
+      if (qty === 0) {
+        html += '<td style="color:#ccc">—</td>';
+      } else if (d.platoAlternativo && o.opciones && o.opciones[d.dia]) {
+        const isAlt = o.opciones[d.dia] !== d.platoFuerte;
+        const color = isAlt ? '#e67e22' : '#27ae60';
+        const icon = isAlt ? '🔸' : '🔹';
+        html += `<td>${icon} ${qty}<br><small style="color:${color};font-size:10px">${o.opciones[d.dia].substring(0,18)}</small></td>`;
+      } else {
+        html += `<td>✓ ${qty}</td>`;
       }
-      html += `<td>${cell}</td>`;
     });
     html += `<td><strong>${o.total}</strong></td></tr>`;
   });
 
   const gt = Object.values(dayTotals).reduce((a,b)=>a+b,0);
-  html += '<tr class="total-row"><td colspan="3">TOTAL</td>';
-  menuData.dias.forEach(d => { html += `<td>${dayTotals[d.dia]}</td>`; });
+  html += '<tr class="total-row"><td colspan="2">TOTAL</td>';
+  menuData.dias.forEach(d => { html += `<td><strong>${dayTotals[d.dia]}</strong></td>`; });
   html += `<td><strong>${gt}</strong></td></tr>`;
+
+  // Option breakdown for days with alternatives
+  const daysWithAlt = menuData.dias.filter(d => d.platoAlternativo);
+  if (daysWithAlt.length > 0) {
+    html += '<tr><td colspan="100%" style="padding:12px 0 4px;font-weight:700;border:none;background:transparent">Desglose por opción:</td></tr>';
+    daysWithAlt.forEach(d => {
+      const opcCounts = {};
+      ordersData.forEach(o => {
+        const qty = (o.detalle && o.detalle[d.dia]) || 0;
+        if (qty > 0) {
+          const opcion = (o.opciones && o.opciones[d.dia]) || d.platoFuerte;
+          opcCounts[opcion] = (opcCounts[opcion] || 0) + qty;
+        }
+      });
+      if (Object.keys(opcCounts).length > 0) {
+        html += `<tr><td colspan="2" style="font-weight:600">${d.dia}</td><td colspan="100%">`;
+        Object.entries(opcCounts).forEach(([opcion, count]) => {
+          html += `<span style="display:inline-block;margin-right:16px">${opcion}: <strong>${count}</strong></span>`;
+        });
+        html += '</td></tr>';
+      }
+    });
+  }
+
   html += '</tbody></table></div>';
   c.innerHTML = html;
 }
@@ -1194,36 +1264,77 @@ function renderOrders() {
 function exportarCSV() {
   if (!ordersData.length) { showToast('No hay pedidos'); return; }
 
-  let csv = 'Nombre,No. Empleado,Fecha';
+  // ─── Build header ───
+  let csv = 'No. Empleado,Nombre,Fecha de Pedido';
   menuData.dias.forEach(d => {
-    csv += `,${d.dia}`;
-    if (d.platoAlternativo) csv += `,${d.dia} Opcion`;
+    if (d.platoAlternativo) {
+      csv += `,"${d.dia} (Cant.)","${d.dia} (Platillo)"`;
+    } else {
+      csv += `,"${d.dia}"`;
+    }
   });
-  csv += ',Total\n';
+  csv += ',Total Semana\n';
 
-  ordersData.forEach(o => {
-    csv += `"${o.nombre}","${o.numEmpleado || ''}","${new Date(o.fecha).toLocaleDateString('es-MX')}"`;
+  // ─── Sort orders by employee number ───
+  const sorted = [...ordersData].sort((a, b) => {
+    const na = parseInt(a.numEmpleado) || 99999;
+    const nb = parseInt(b.numEmpleado) || 99999;
+    return na - nb;
+  });
+
+  // ─── Data rows ───
+  sorted.forEach(o => {
+    csv += `"${o.numEmpleado || 'S/N'}","${o.nombre}","${new Date(o.fecha).toLocaleDateString('es-MX', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'})}"`;
     menuData.dias.forEach(d => {
-      csv += `,${(o.detalle && o.detalle[d.dia]) || 0}`;
+      const qty = (o.detalle && o.detalle[d.dia]) || 0;
       if (d.platoAlternativo) {
-        csv += `,"${(o.opciones && o.opciones[d.dia]) || d.platoFuerte}"`;
+        const opcion = (qty > 0 && o.opciones && o.opciones[d.dia]) ? o.opciones[d.dia] : '';
+        csv += `,${qty},"${opcion}"`;
+      } else {
+        csv += `,${qty}`;
       }
     });
     csv += `,${o.total}\n`;
   });
 
+  // ─── Totals row ───
   const dayTotals = {};
   menuData.dias.forEach(d => { dayTotals[d.dia] = 0; });
   ordersData.forEach(o => { menuData.dias.forEach(d => { dayTotals[d.dia] += (o.detalle && o.detalle[d.dia]) || 0; }); });
-  const gt = Object.values(dayTotals).reduce((a,b)=>a+b,0);
-  csv += `"TOTAL","",""`;
-  menuData.dias.forEach(d => { csv += `,${dayTotals[d.dia]}`; if (d.platoAlternativo) csv += `,""`;  });
+  const gt = Object.values(dayTotals).reduce((a,b) => a+b, 0);
+  csv += `"","TOTAL",""`;
+  menuData.dias.forEach(d => {
+    csv += `,${dayTotals[d.dia]}`;
+    if (d.platoAlternativo) csv += `,""`;
+  });
   csv += `,${gt}\n`;
+
+  // ─── Option breakdown rows (for days with alternatives) ───
+  const daysWithAlt = menuData.dias.filter(d => d.platoAlternativo);
+  if (daysWithAlt.length > 0) {
+    csv += '\n"","DESGLOSE POR OPCION",""\n';
+    daysWithAlt.forEach(d => {
+      const opcCounts = {};
+      ordersData.forEach(o => {
+        const qty = (o.detalle && o.detalle[d.dia]) || 0;
+        if (qty > 0) {
+          const opcion = (o.opciones && o.opciones[d.dia]) || d.platoFuerte;
+          opcCounts[opcion] = (opcCounts[opcion] || 0) + qty;
+        }
+      });
+      if (Object.keys(opcCounts).length > 0) {
+        csv += `\n"","${d.dia} ${d.fecha}",""\n`;
+        Object.entries(opcCounts).forEach(([opcion, count]) => {
+          csv += `"","  ${opcion}","${count} comida${count !== 1 ? 's' : ''}"\n`;
+        });
+      }
+    });
+  }
 
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `pedidos_S${menuData.semana}_${menuData.mes}${menuData.anio}.csv`;
+  a.download = `pedidos_PROESA_S${menuData.semana}_${menuData.mes}${menuData.anio}.csv`;
   a.click();
   showToast('CSV descargado');
 }
