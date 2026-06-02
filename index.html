@@ -631,6 +631,19 @@ body { padding-bottom: 80px; }
 .ordering-locked .menu-grid,
 .ordering-locked .summary-bar,
 .ordering-locked .water-note { opacity: 0.3; pointer-events: none; user-select: none; }
+
+/* DAY PASSED LOCK */
+.day-card.day-passed { opacity: 0.4; pointer-events: none; user-select: none; position: relative; }
+.day-card.day-passed::after {
+  content: 'Este dia ya paso';
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(26,82,118,0.9); color: #fff;
+  padding: 8px 16px; border-radius: 8px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.85rem; font-weight: 600;
+  white-space: nowrap;
+}
 </style>
 </head>
 <body>
@@ -845,7 +858,9 @@ function renderMenu() {
     const hasAlt = d.platoAlternativo && d.platoAlternativo.trim();
 
     const card = document.createElement('div');
-    card.className = 'day-card';
+    const passed = !adminVisible && isDayPassed(d.dia);
+    card.className = 'day-card' + (passed ? ' day-passed' : '');
+    if (passed) { quantities[i] = 0; }
 
     let altHTML = '';
     if (hasAlt) {
@@ -907,8 +922,9 @@ function selectOption(i, opt) {
   renderMenu();
 }
 
-function changeQty(i, d) {
-  quantities[i] = Math.max(0, (quantities[i]||0) + d);
+function changeQty(i, delta) {
+  if (!adminVisible && menuData.dias[i] && isDayPassed(menuData.dias[i].dia)) return;
+  quantities[i] = Math.max(0, (quantities[i]||0) + delta);
   const el = document.getElementById(`qty-${i}`);
   el.textContent = quantities[i];
   el.className = 'qty-value' + (quantities[i]>0?' active':'');
@@ -1422,6 +1438,16 @@ function showToast(m) {
 
 // Auto-refresh orders in admin
 setInterval(async () => { if (adminVisible) { await loadFromCloud(); renderOrders(); } }, 30000);
+
+// --- DAY NAME TO NUMBER MAP ---
+const DAY_MAP = { 'lunes':1, 'martes':2, 'miercoles':3, 'miércoles':3, 'jueves':4, 'viernes':5, 'sabado':6, 'sábado':6, 'domingo':0 };
+
+function isDayPassed(dayName) {
+  const today = new Date().getDay(); // 0=Sun, 1=Mon...
+  const dayNum = DAY_MAP[dayName.toLowerCase().trim()];
+  if (dayNum === undefined) return false;
+  return dayNum < today;
+}
 
 // --- ORDER LOCK (10 AM - 5 PM) ---
 function isOrderingOpen() {
