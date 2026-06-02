@@ -607,6 +607,30 @@ body {
 }
 
 body { padding-bottom: 80px; }
+
+/* LOCK OVERLAY */
+.lock-overlay {
+  display: none;
+  background: rgba(26, 82, 118, 0.95);
+  border-radius: 16px;
+  padding: 30px 20px;
+  margin: 0 auto 20px;
+  max-width: 520px;
+  text-align: center;
+  color: #fff;
+  animation: fadeIn 0.3s ease;
+}
+.lock-overlay.active { display: block; }
+.lock-overlay .lock-icon { font-size: 2.5rem; margin-bottom: 10px; }
+.lock-overlay h3 { font-family: 'Montserrat', sans-serif; font-size: 1.2rem; margin-bottom: 8px; }
+.lock-overlay p { font-size: 0.95rem; opacity: 0.9; line-height: 1.5; }
+.lock-overlay .lock-time { font-weight: 700; color: var(--teal-light); font-size: 1.1rem; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+.ordering-locked .nombre-section,
+.ordering-locked .menu-grid,
+.ordering-locked .summary-bar,
+.ordering-locked .water-note { opacity: 0.3; pointer-events: none; user-select: none; }
 </style>
 </head>
 <body>
@@ -642,6 +666,14 @@ body { padding-bottom: 80px; }
   <div class="sync-status" id="syncStatus">
     <span class="sync-dot loading"></span> Cargando...
   </div>
+</div>
+
+<!-- LOCK OVERLAY -->
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-icon">&#128274;</div>
+  <h3>Pedidos Cerrados</h3>
+  <p>El horario de pedidos ha terminado por hoy.<br>
+  Se abren nuevamente a las <span class="lock-time">5:00 PM</span></p>
 </div>
 
 <!-- DATOS EMPLEADO -->
@@ -923,6 +955,7 @@ function copiarResumen() {
 }
 
 async function enviarPedido() {
+  if (!isOrderingOpen() && !adminVisible) { showToast('Pedidos cerrados. Se abren a las 5:00 PM'); return; }
   const nombre = document.getElementById('nombreInput').value.trim();
   const numEmp = document.getElementById('numEmpleado').value.trim();
   if (!nombre) { showToast('Escribe tu nombre'); document.getElementById('nombreInput').focus(); return; }
@@ -993,6 +1026,7 @@ function toggleAdmin() {
   adminVisible = !adminVisible;
   document.getElementById('adminPanel').classList.toggle('visible', adminVisible);
   if (adminVisible) { populateAdminForm(); renderOrders(); }
+  if (typeof checkOrderLock === 'function') checkOrderLock();
 }
 
 // --- ADMIN FORM ---
@@ -1389,8 +1423,31 @@ function showToast(m) {
 // Auto-refresh orders in admin
 setInterval(async () => { if (adminVisible) { await loadFromCloud(); renderOrders(); } }, 30000);
 
+// --- ORDER LOCK (10 AM - 5 PM) ---
+function isOrderingOpen() {
+  const now = new Date();
+  const hour = now.getHours();
+  // Open: before 10 AM or at/after 5 PM (17:00)
+  return hour < 10 || hour >= 17;
+}
+
+function checkOrderLock() {
+  if (adminVisible) {
+    // Admin is always exempt
+    document.getElementById('lockOverlay').classList.remove('active');
+    document.body.classList.remove('ordering-locked');
+    return;
+  }
+  const open = isOrderingOpen();
+  document.getElementById('lockOverlay').classList.toggle('active', !open);
+  document.body.classList.toggle('ordering-locked', !open);
+}
+
+// Check every 60 seconds
+setInterval(checkOrderLock, 60000);
+
 // --- INIT ---
-(async () => { await loadFromCloud(); renderMenu(); })();
+(async () => { await loadFromCloud(); renderMenu(); checkOrderLock(); })();
 </script>
 </body>
 </html>
