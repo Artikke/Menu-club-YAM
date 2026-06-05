@@ -247,52 +247,27 @@ body {
   border-top: 1px solid var(--border);
 }
 
-.order-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.order-label { font-size: 0.85rem; color: var(--muted); }
-
-.qty-control {
-  display: flex;
-  align-items: center;
-  background: var(--bg);
+.order-toggle {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid var(--border);
   border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-}
-
-.qty-btn {
-  width: 38px; height: 38px;
-  border: none;
-  background: transparent;
-  color: var(--gold);
-  font-size: 1.2rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-  font-weight: 700;
-}
-
-.qty-btn:hover { background: rgba(15,155,142,0.1); }
-
-.qty-value {
-  width: 40px;
-  text-align: center;
-  font-size: 1.1rem;
+  background: var(--bg);
+  color: var(--muted);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.95rem;
   font-weight: 600;
-  color: var(--white);
-  border-left: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-  padding: 6px 0;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.qty-value.active { color: var(--gold); }
+.order-toggle:hover { border-color: var(--teal); color: var(--teal); }
+
+.order-toggle.active {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #fff;
+}
 
 .water-note {
   text-align: center;
@@ -902,14 +877,9 @@ function renderMenu() {
         <div class="meal-name">${d.postre}</div>
       </div>
       <div class="day-order">
-        <div class="order-row">
-          <span class="order-label">Comidas:</span>
-          <div class="qty-control">
-            <button class="qty-btn" onclick="changeQty(${i},-1)">-</button>
-            <div class="qty-value ${quantities[i]>0?'active':''}" id="qty-${i}">${quantities[i]}</div>
-            <button class="qty-btn" onclick="changeQty(${i},1)">+</button>
-          </div>
-        </div>
+        <button class="order-toggle ${quantities[i]>0?'active':''}" id="qty-${i}" onclick="toggleDay(${i})">
+          ${quantities[i]>0 ? '&#10003; Pedido' : 'Pedir'}
+        </button>
       </div>
     `;
     grid.appendChild(card);
@@ -924,10 +894,19 @@ function selectOption(i, opt) {
 
 function changeQty(i, delta) {
   if (!adminVisible && menuData.dias[i] && isDayPassed(menuData.dias[i].dia)) return;
-  quantities[i] = Math.max(0, (quantities[i]||0) + delta);
+  quantities[i] = Math.max(0, Math.min(1, (quantities[i]||0) + delta));
   const el = document.getElementById(`qty-${i}`);
-  el.textContent = quantities[i];
-  el.className = 'qty-value' + (quantities[i]>0?' active':'');
+  el.innerHTML = quantities[i] > 0 ? '&#10003; Pedido' : 'Pedir';
+  el.className = 'order-toggle' + (quantities[i]>0?' active':'');
+  updateSummary();
+}
+
+function toggleDay(i) {
+  if (!adminVisible && menuData.dias[i] && isDayPassed(menuData.dias[i].dia)) return;
+  quantities[i] = quantities[i] > 0 ? 0 : 1;
+  const el = document.getElementById(`qty-${i}`);
+  el.innerHTML = quantities[i] > 0 ? '&#10003; Pedido' : 'Pedir';
+  el.className = 'order-toggle' + (quantities[i]>0?' active':'');
   updateSummary();
 }
 
