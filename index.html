@@ -660,6 +660,34 @@ body { padding-bottom: 80px; }
   border-radius: 10px; cursor: pointer; font-weight: 500;
 }
 
+/* CORTESIAS ADMIN */
+.cortesias-section { margin-top: 20px; padding: 15px; background: var(--bg); border-radius: 12px; }
+.cortesias-section h4 { font-family: 'Montserrat', sans-serif; margin-bottom: 12px; color: var(--gold); }
+.cortesia-add { display: flex; gap: 8px; margin-bottom: 12px; }
+.cortesia-add input { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; }
+.cortesia-add button {
+  padding: 10px 16px; background: var(--teal); color: #fff;
+  border: none; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.cortesia-list { max-height: 200px; overflow-y: auto; }
+.cortesia-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 12px; margin-bottom: 4px;
+  background: #fff; border-radius: 8px; font-size: 0.9rem;
+}
+.cortesia-item .cortesia-info { font-weight: 500; }
+.cortesia-item .cortesia-info small { color: var(--muted); margin-left: 8px; }
+.cortesia-remove {
+  background: #e74c3c; color: #fff; border: none;
+  padding: 4px 10px; border-radius: 6px; font-size: 0.75rem;
+  cursor: pointer; font-weight: 600;
+}
+.cortesia-badge {
+  display: inline-block; background: #f39c12; color: #fff;
+  padding: 2px 8px; border-radius: 4px; font-size: 0.7rem;
+  font-weight: 600; margin-left: 6px;
+}
+
 .day-card.day-passed::after {
   content: 'Este dia ya paso';
   position: absolute; top: 50%; left: 50%;
@@ -808,6 +836,17 @@ body { padding-bottom: 80px; }
     <button class="admin-btn reset" onclick="resetMenu()">Restaurar</button>
   </div>
 
+  <!-- CORTESIAS -->
+  <div class="cortesias-section">
+    <h4>Cortesias</h4>
+    <div class="cortesia-add">
+      <input type="text" id="cortesiaNum" placeholder="No. empleado" inputmode="numeric" />
+      <input type="text" id="cortesiaNombre" placeholder="Nombre" />
+      <button onclick="agregarCortesia()">Agregar</button>
+    </div>
+    <div class="cortesia-list" id="cortesiaList"></div>
+  </div>
+
   <!-- ORDERS -->
   <div class="orders-log">
     <h3>Pedidos Recibidos</h3>
@@ -844,6 +883,7 @@ const DEFAULT_MENU = {
 // --- STATE ---
 let menuData = JSON.parse(JSON.stringify(DEFAULT_MENU));
 let ordersData = [];
+let cortesiasData = []; // [{numEmpleado, nombre}]
 let quantities = {};
 let selections = {};
 let adminAuth = false;
@@ -862,6 +902,7 @@ async function loadFromCloud() {
     const d = (await r.json()).record;
     if (d?.menu?.dias) menuData = d.menu;
     if (Array.isArray(d?.orders)) ordersData = d.orders;
+    if (Array.isArray(d?.cortesias)) cortesiasData = d.cortesias;
     setSyncStatus('ok', 'Sincronizado');
     return true;
   } catch(e) { setSyncStatus('error', 'Sin conexion'); return false; }
@@ -873,7 +914,7 @@ async function saveToCloud() {
     const r = await fetch(BIN_URL, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
-      body: JSON.stringify({ menu: menuData, orders: ordersData })
+      body: JSON.stringify({ menu: menuData, orders: ordersData, cortesias: cortesiasData })
     });
     if (!r.ok) throw new Error(r.status);
     setSyncStatus('ok', 'Sincronizado');
@@ -1085,7 +1126,7 @@ let adminVisible = false;
 function toggleAdmin() {
   adminVisible = !adminVisible;
   document.getElementById('adminPanel').classList.toggle('visible', adminVisible);
-  if (adminVisible) { populateAdminForm(); renderOrders(); }
+  if (adminVisible) { populateAdminForm(); renderOrders(); renderCortesias(); }
   if (typeof checkOrderLock === 'function') checkOrderLock();
 }
 
@@ -1283,7 +1324,7 @@ function renderOrders() {
   });
 
   let html = '<div class="orders-table-wrap"><table class="orders-table"><thead><tr>';
-  html += '<th>No.</th><th>Nombre</th>';
+  html += '<th>No.</th><th>Nombre</th><th>Tipo</th>';
   menuData.dias.forEach(d => {
     const label = d.dia.substring(0,3);
     html += d.platoAlternativo ? `<th>${label} *</th>` : `<th>${label}</th>`;
@@ -1291,9 +1332,11 @@ function renderOrders() {
   html += '<th>Total</th></tr></thead><tbody>';
 
   sorted.forEach(o => {
+    const cortesia = isCortesia(o.numEmpleado);
     html += '<tr>';
     html += `<td style="font-weight:600;color:var(--primary)">${o.numEmpleado || '-'}</td>`;
     html += `<td>${o.nombre}</td>`;
+    html += `<td>${cortesia ? '<span class="cortesia-badge">Cortesia</span>' : 'Empleado'}</td>`;
     menuData.dias.forEach(d => {
       const qty = (o.detalle && o.detalle[d.dia]) || 0;
       dayTotals[d.dia] += qty;
@@ -1312,7 +1355,7 @@ function renderOrders() {
   });
 
   const gt = Object.values(dayTotals).reduce((a,b)=>a+b,0);
-  html += '<tr class="total-row"><td colspan="2">TOTAL</td>';
+  html += '<tr class="total-row"><td colspan="3">TOTAL</td>';
   menuData.dias.forEach(d => { html += `<td><strong>${dayTotals[d.dia]}</strong></td>`; });
   html += `<td><strong>${gt}</strong></td></tr>`;
 
@@ -1359,7 +1402,7 @@ function exportarCSV() {
   });
 
   // Count columns
-  let colCount = 5; // No, Nombre, Fecha, Hora, Total
+  let colCount = 6; // No, Nombre, Tipo, Fecha, Hora, Total
   menuData.dias.forEach(d => { colCount += d.platoAlternativo ? 2 : 1; });
 
   let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"/></head><body>';
@@ -1374,6 +1417,7 @@ function exportarCSV() {
   html += '<tr>';
   html += `<th style="${bdr}background:${hd};color:#fff;font-weight:bold;text-align:center;">No. Emp</th>`;
   html += `<th style="${bdr}background:${hd};color:#fff;font-weight:bold;text-align:left;">Nombre</th>`;
+  html += `<th style="${bdr}background:${hd};color:#fff;font-weight:bold;text-align:center;">Tipo</th>`;
   html += `<th style="${bdr}background:${hd};color:#fff;font-weight:bold;text-align:center;">Fecha</th>`;
   html += `<th style="${bdr}background:${hd};color:#fff;font-weight:bold;text-align:center;">Hora</th>`;
   menuData.dias.forEach(d => {
@@ -1394,8 +1438,11 @@ function exportarCSV() {
     const fecha = dt.toLocaleDateString('es-MX', {day:'2-digit', month:'2-digit', year:'numeric'});
     const hora = dt.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
     html += '<tr>';
+    const cortesia = isCortesia(o.numEmpleado);
+    const tipoStyle = cortesia ? 'background:#f39c12;color:#fff;font-weight:600;' : `background:${bg};`;
     html += `<td style="${bdr}background:${bg};text-align:center;font-weight:600;">${o.numEmpleado || 'S/N'}</td>`;
     html += `<td style="${bdr}background:${bg};text-align:left;">${o.nombre}</td>`;
+    html += `<td style="${bdr}${tipoStyle}text-align:center;">${cortesia ? 'Cortesia' : 'Empleado'}</td>`;
     html += `<td style="${bdr}background:${bg};text-align:center;">${fecha}</td>`;
     html += `<td style="${bdr}background:${bg};text-align:center;">${hora}</td>`;
     menuData.dias.forEach(d => {
@@ -1420,7 +1467,7 @@ function exportarCSV() {
   const gt = Object.values(dayTotals).reduce((a,b) => a+b, 0);
 
   html += '<tr>';
-  html += `<td style="${bdr}background:${hd};color:#fff;font-weight:bold;text-align:center;" colspan="4">TOTAL</td>`;
+  html += `<td style="${bdr}background:${hd};color:#fff;font-weight:bold;text-align:center;" colspan="5">TOTAL</td>`;
   menuData.dias.forEach(d => {
     html += `<td style="${bdr}background:${hd};color:#fff;font-weight:bold;text-align:center;font-size:13pt;">${dayTotals[d.dia]}</td>`;
     if (d.platoAlternativo) html += `<td style="${bdr}background:${hd};"></td>`;
@@ -1471,6 +1518,44 @@ async function limpiarPedidos() {
     renderOrders();
     showToast('Pedidos eliminados');
   }
+}
+
+// --- CORTESIAS ---
+function isCortesia(numEmpleado) {
+  return cortesiasData.some(c => c.numEmpleado === numEmpleado);
+}
+
+function renderCortesias() {
+  const list = document.getElementById('cortesiaList');
+  if (!cortesiasData.length) { list.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:8px;">No hay cortesias registradas</div>'; return; }
+  list.innerHTML = cortesiasData.map((c, i) => `
+    <div class="cortesia-item">
+      <span class="cortesia-info">${c.numEmpleado}<small>${c.nombre || ''}</small></span>
+      <button class="cortesia-remove" onclick="quitarCortesia(${i})">Quitar</button>
+    </div>
+  `).join('');
+}
+
+async function agregarCortesia() {
+  const num = document.getElementById('cortesiaNum').value.trim();
+  const nombre = document.getElementById('cortesiaNombre').value.trim();
+  if (!num) { showToast('Escribe el numero de empleado'); return; }
+  if (isCortesia(num)) { showToast('Ya esta registrado'); return; }
+  cortesiasData.push({ numEmpleado: num, nombre: nombre });
+  await saveToCloud();
+  document.getElementById('cortesiaNum').value = '';
+  document.getElementById('cortesiaNombre').value = '';
+  renderCortesias();
+  renderOrders();
+  showToast('Cortesia agregada');
+}
+
+async function quitarCortesia(idx) {
+  cortesiasData.splice(idx, 1);
+  await saveToCloud();
+  renderCortesias();
+  renderOrders();
+  showToast('Cortesia eliminada');
 }
 
 function showToast(m) {
