@@ -712,7 +712,7 @@ body { padding-bottom: 80px; }
   <div class="lock-icon">&#128274;</div>
   <h3>Pedidos Cerrados</h3>
   <p id="lockMsg">El horario de pedidos es de <span class="lock-time">7:00 a 10:00 AM</span><br>
-  Cancelaciones: <span class="lock-time">5:00 PM a 12:00 AM</span> y <span class="lock-time">7:00 a 10:00 AM</span></p>
+  Cancelaciones: hasta las <span class="lock-time">12:30 PM</span> y de <span class="lock-time">5:00 PM a 12:00 AM</span></p>
 </div>
 
 <!-- DATOS EMPLEADO -->
@@ -1514,8 +1514,11 @@ function isCancelOpen() {
   const now = new Date();
   const day = now.getDay();
   const hour = now.getHours();
+  const min = now.getMinutes();
   if (day === 0 || day === 6) return false;
-  return (hour >= 7 && hour < 10) || hour >= 17;
+  // Cancelar: 7 AM a 12:30 PM y 5 PM a 12 AM
+  const morningOpen = hour >= 7 && (hour < 12 || (hour === 12 && min <= 30));
+  return morningOpen || hour >= 17;
 }
 
 function checkOrderLock() {
