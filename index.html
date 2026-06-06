@@ -609,6 +609,57 @@ body { padding-bottom: 80px; }
 
 /* DAY PASSED LOCK */
 .day-card.day-passed { opacity: 0.4; pointer-events: none; user-select: none; position: relative; }
+/* CANCEL PANEL */
+.cancel-btn-float {
+  position: fixed; bottom: 80px; right: 20px; z-index: 90;
+  background: #e74c3c; color: #fff; border: none;
+  padding: 10px 18px; border-radius: 25px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; box-shadow: 0 4px 12px rgba(231,76,60,0.3);
+  transition: all 0.2s;
+}
+.cancel-btn-float:hover { background: #c0392b; transform: scale(1.05); }
+.cancel-btn-float.hidden { display: none; }
+
+.cancel-panel {
+  display: none; max-width: 520px; margin: 20px auto;
+  background: #fff; border-radius: 16px;
+  border: 2px solid #e74c3c; padding: 24px 20px;
+  box-shadow: 0 8px 24px rgba(231,76,60,0.15);
+}
+.cancel-panel.active { display: block; }
+.cancel-panel h3 { font-family: 'Montserrat', sans-serif; color: #e74c3c; margin-bottom: 15px; text-align: center; }
+.cancel-search { display: flex; gap: 10px; margin-bottom: 15px; }
+.cancel-search input {
+  flex: 1; padding: 12px; border: 1px solid var(--border);
+  border-radius: 10px; font-size: 0.95rem;
+}
+.cancel-search button {
+  padding: 12px 20px; background: var(--gold); color: #fff;
+  border: none; border-radius: 10px; font-weight: 600; cursor: pointer;
+}
+.cancel-results { margin-top: 10px; }
+.cancel-day-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 15px; margin-bottom: 8px;
+  background: var(--bg); border-radius: 10px;
+}
+.cancel-day-item .day-info { font-weight: 500; }
+.cancel-day-item .day-info small { color: var(--muted); display: block; font-weight: 400; }
+.cancel-day-btn {
+  background: #e74c3c; color: #fff; border: none;
+  padding: 8px 16px; border-radius: 8px;
+  font-size: 0.8rem; font-weight: 600; cursor: pointer;
+}
+.cancel-day-btn:hover { background: #c0392b; }
+.cancel-empty { text-align: center; color: var(--muted); padding: 20px; }
+.cancel-close {
+  display: block; margin: 15px auto 0; padding: 10px 30px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 10px; cursor: pointer; font-weight: 500;
+}
+
 .day-card.day-passed::after {
   content: 'Este dia ya paso';
   position: absolute; top: 50%; left: 50%;
@@ -660,8 +711,8 @@ body { padding-bottom: 80px; }
 <div class="lock-overlay" id="lockOverlay">
   <div class="lock-icon">&#128274;</div>
   <h3>Pedidos Cerrados</h3>
-  <p id="lockMsg">El horario de pedidos ha terminado.<br>
-  Horario: <span class="lock-time">7:00 - 10:00 AM</span> y <span class="lock-time">5:00 - 12:00 PM</span></p>
+  <p id="lockMsg">El horario de pedidos es de <span class="lock-time">7:00 a 10:00 AM</span><br>
+  Cancelaciones: <span class="lock-time">5:00 PM a 12:00 AM</span> y <span class="lock-time">7:00 a 10:00 AM</span></p>
 </div>
 
 <!-- DATOS EMPLEADO -->
@@ -683,6 +734,20 @@ body { padding-bottom: 80px; }
   <div class="summary-total" id="summaryText"></div>
   <button class="btn-copy" onclick="copiarResumen()">Copiar</button>
   <button class="btn-send" onclick="enviarPedido()">Enviar Pedido</button>
+</div>
+
+<!-- CANCEL BUTTON -->
+<button class="cancel-btn-float hidden" id="cancelBtnFloat" onclick="toggleCancelPanel()">Cancelar Pedido</button>
+
+<!-- CANCEL PANEL -->
+<div class="cancel-panel" id="cancelPanel">
+  <h3>Cancelar Pedido</h3>
+  <div class="cancel-search">
+    <input type="text" id="cancelNumEmp" placeholder="Tu numero de empleado" inputmode="numeric" />
+    <button onclick="buscarPedido()">Buscar</button>
+  </div>
+  <div class="cancel-results" id="cancelResults"></div>
+  <button class="cancel-close" onclick="toggleCancelPanel()">Cerrar</button>
 </div>
 
 <!-- MODAL PEDIDO -->
@@ -1435,28 +1500,107 @@ function isDayPassed(dayName) {
 }
 
 // --- ORDER LOCK ---
-// Abierto: Lunes a Viernes de 7 AM a 10 AM y de 5 PM a 11:59 PM
-// Fines de semana: cerrado
+// Pedir: Lunes a Viernes de 7 AM a 10 AM
+// Cancelar: 5 PM a 12 AM (dia anterior) y 7 AM a 10 AM (mismo dia)
 function isOrderingOpen() {
   const now = new Date();
-  const day = now.getDay(); // 0=Dom, 6=Sab
+  const day = now.getDay();
   const hour = now.getHours();
-  // Fines de semana cerrado
   if (day === 0 || day === 6) return false;
-  // Entre semana: abierto 7-10 AM y 5-midnight
+  return hour >= 7 && hour < 10;
+}
+
+function isCancelOpen() {
+  const now = new Date();
+  const day = now.getDay();
+  const hour = now.getHours();
+  if (day === 0 || day === 6) return false;
   return (hour >= 7 && hour < 10) || hour >= 17;
 }
 
 function checkOrderLock() {
   if (adminVisible) {
-    // Admin is always exempt
     document.getElementById('lockOverlay').classList.remove('active');
     document.body.classList.remove('ordering-locked');
+    document.getElementById('cancelBtnFloat').classList.remove('hidden');
     return;
   }
-  const open = isOrderingOpen();
-  document.getElementById('lockOverlay').classList.toggle('active', !open);
-  document.body.classList.toggle('ordering-locked', !open);
+  const orderOpen = isOrderingOpen();
+  const cancelOpen = isCancelOpen();
+  document.getElementById('lockOverlay').classList.toggle('active', !orderOpen);
+  document.body.classList.toggle('ordering-locked', !orderOpen);
+  document.getElementById('cancelBtnFloat').classList.toggle('hidden', !cancelOpen);
+  // Si se cierra la ventana de cancelar, cerrar panel
+  if (!cancelOpen) document.getElementById('cancelPanel').classList.remove('active');
+}
+
+// --- CANCEL FUNCTIONS ---
+function toggleCancelPanel() {
+  const panel = document.getElementById('cancelPanel');
+  panel.classList.toggle('active');
+  if (panel.classList.contains('active')) {
+    document.getElementById('cancelNumEmp').value = '';
+    document.getElementById('cancelResults').innerHTML = '';
+    document.getElementById('cancelNumEmp').focus();
+  }
+}
+
+function buscarPedido() {
+  const num = document.getElementById('cancelNumEmp').value.trim();
+  if (!num) { showToast('Escribe tu numero de empleado'); return; }
+
+  const myOrders = ordersData.filter(o => o.numEmpleado === num);
+  const container = document.getElementById('cancelResults');
+
+  if (myOrders.length === 0) {
+    container.innerHTML = '<div class="cancel-empty">No se encontraron pedidos con ese numero</div>';
+    return;
+  }
+
+  // Mostrar el pedido mas reciente
+  const order = myOrders[myOrders.length - 1];
+  const idx = ordersData.indexOf(order);
+  let html = `<div style="margin-bottom:8px;font-size:0.9rem;color:var(--muted);">Pedido de <strong>${order.nombre}</strong></div>`;
+
+  const dias = Object.keys(order.detalle);
+  if (dias.length === 0) {
+    container.innerHTML = '<div class="cancel-empty">No hay dias en este pedido</div>';
+    return;
+  }
+
+  dias.forEach(dia => {
+    const opcion = order.opciones && order.opciones[dia] ? order.opciones[dia] : '';
+    html += `
+      <div class="cancel-day-item">
+        <div class="day-info">
+          ${dia}
+          ${opcion ? `<small>${opcion}</small>` : ''}
+        </div>
+        <button class="cancel-day-btn" onclick="cancelarDia(${idx}, '${dia}')">Cancelar</button>
+      </div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+async function cancelarDia(orderIdx, dia) {
+  if (!adminVisible && !isCancelOpen()) { showToast('Horario de cancelacion cerrado'); return; }
+  const order = ordersData[orderIdx];
+  if (!order) return;
+
+  delete order.detalle[dia];
+  if (order.opciones) delete order.opciones[dia];
+  order.total = Object.values(order.detalle).reduce((a,b) => a+b, 0);
+
+  // Si ya no tiene dias, quitar el pedido completo
+  if (Object.keys(order.detalle).length === 0) {
+    ordersData.splice(orderIdx, 1);
+  }
+
+  await saveToCloud();
+  showToast(`${dia} cancelado`);
+  buscarPedido(); // Refrescar la lista
+  if (adminVisible) renderOrders();
 }
 
 // Check every 60 seconds
