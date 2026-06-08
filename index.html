@@ -682,6 +682,14 @@ body { padding-bottom: 80px; }
   padding: 4px 10px; border-radius: 6px; font-size: 0.75rem;
   cursor: pointer; font-weight: 600;
 }
+.cortesia-dias-select {
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 10px;
+  background: #fff; border-radius: 8px; border: 1px solid var(--border);
+}
+.cortesia-dia-check { display: flex; align-items: center; gap: 4px; font-size: 0.85rem; }
+.cortesia-dia-check input { width: 16px; height: 16px; cursor: pointer; }
+.cortesia-dia-check label { cursor: pointer; }
+.cortesia-item .cortesia-dias { font-size: 0.75rem; color: var(--teal); margin-top: 2px; }
 .cortesia-badge {
   display: inline-block; background: #f39c12; color: #fff;
   padding: 2px 8px; border-radius: 4px; font-size: 0.7rem;
@@ -840,10 +848,10 @@ body { padding-bottom: 80px; }
   <div class="cortesias-section">
     <h4>Cortesias</h4>
     <div class="cortesia-add">
-      <input type="text" id="cortesiaNum" placeholder="No. empleado" inputmode="numeric" />
-      <input type="text" id="cortesiaNombre" placeholder="Nombre" />
+      <input type="text" id="cortesiaNombre" placeholder="Nombre de la persona" style="flex:2" />
       <button onclick="agregarCortesia()">Agregar</button>
     </div>
+    <div id="cortesiaDias" style="display:none;margin-bottom:12px;"></div>
     <div class="cortesia-list" id="cortesiaList"></div>
   </div>
 
@@ -1332,11 +1340,10 @@ function renderOrders() {
   html += '<th>Total</th></tr></thead><tbody>';
 
   sorted.forEach(o => {
-    const cortesia = isCortesia(o.numEmpleado);
     html += '<tr>';
     html += `<td style="font-weight:600;color:var(--primary)">${o.numEmpleado || '-'}</td>`;
     html += `<td>${o.nombre}</td>`;
-    html += `<td>${cortesia ? '<span class="cortesia-badge">Cortesia</span>' : 'Empleado'}</td>`;
+    html += '<td>Empleado</td>';
     menuData.dias.forEach(d => {
       const qty = (o.detalle && o.detalle[d.dia]) || 0;
       dayTotals[d.dia] += qty;
@@ -1352,6 +1359,22 @@ function renderOrders() {
       }
     });
     html += `<td><strong>${o.total}</strong></td></tr>`;
+  });
+
+  // Cortesias rows
+  cortesiasData.forEach(c => {
+    html += '<tr>';
+    html += '<td style="color:#ccc">-</td>';
+    html += `<td>${c.nombre}</td>`;
+    html += '<td><span class="cortesia-badge">Cortesia</span></td>';
+    let cTotal = 0;
+    menuData.dias.forEach(d => {
+      const tiene = (c.dias && c.dias[d.dia]) ? 1 : 0;
+      cTotal += tiene;
+      dayTotals[d.dia] += tiene;
+      html += tiene ? '<td>1</td>' : '<td style="color:#ccc">-</td>';
+    });
+    html += `<td><strong>${cTotal}</strong></td></tr>`;
   });
 
   const gt = Object.values(dayTotals).reduce((a,b)=>a+b,0);
@@ -1431,18 +1454,17 @@ function exportarCSV() {
   html += `<th style="${bdr}background:${hd};color:#fff;font-weight:bold;text-align:center;">Total</th>`;
   html += '</tr>';
 
-  // Data rows
-  sorted.forEach((o, i) => {
-    const bg = i % 2 === 0 ? '#fff' : lt;
+  // Data rows - Empleados
+  let rowIdx = 0;
+  sorted.forEach(o => {
+    const bg = rowIdx % 2 === 0 ? '#fff' : lt;
     const dt = new Date(o.fecha);
     const fecha = dt.toLocaleDateString('es-MX', {day:'2-digit', month:'2-digit', year:'numeric'});
     const hora = dt.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
     html += '<tr>';
-    const cortesia = isCortesia(o.numEmpleado);
-    const tipoStyle = cortesia ? 'background:#f39c12;color:#fff;font-weight:600;' : `background:${bg};`;
     html += `<td style="${bdr}background:${bg};text-align:center;font-weight:600;">${o.numEmpleado || 'S/N'}</td>`;
     html += `<td style="${bdr}background:${bg};text-align:left;">${o.nombre}</td>`;
-    html += `<td style="${bdr}${tipoStyle}text-align:center;">${cortesia ? 'Cortesia' : 'Empleado'}</td>`;
+    html += `<td style="${bdr}background:${bg};text-align:center;">Empleado</td>`;
     html += `<td style="${bdr}background:${bg};text-align:center;">${fecha}</td>`;
     html += `<td style="${bdr}background:${bg};text-align:center;">${hora}</td>`;
     menuData.dias.forEach(d => {
@@ -1458,12 +1480,40 @@ function exportarCSV() {
     });
     html += `<td style="${bdr}background:${bg};text-align:center;font-weight:bold;font-size:12pt;">${o.total}</td>`;
     html += '</tr>';
+    rowIdx++;
+  });
+
+  // Data rows - Cortesias
+  cortesiasData.forEach(c => {
+    const bg = rowIdx % 2 === 0 ? '#fff' : lt;
+    const cortBg = '#fef9e7';
+    html += '<tr>';
+    html += `<td style="${bdr}background:${cortBg};text-align:center;color:#ccc;">-</td>`;
+    html += `<td style="${bdr}background:${cortBg};text-align:left;">${c.nombre}</td>`;
+    html += `<td style="${bdr}background:#f39c12;color:#fff;font-weight:600;text-align:center;">Cortesia</td>`;
+    html += `<td style="${bdr}background:${cortBg};text-align:center;">-</td>`;
+    html += `<td style="${bdr}background:${cortBg};text-align:center;">-</td>`;
+    let cTotal = 0;
+    menuData.dias.forEach(d => {
+      const tiene = (c.dias && c.dias[d.dia]) ? 1 : 0;
+      cTotal += tiene;
+      if (d.platoAlternativo) {
+        html += `<td style="${bdr}background:${cortBg};text-align:center;font-weight:${tiene?'600':'400'};${tiene===0?'color:#ccc;':''}">${tiene}</td>`;
+        html += `<td style="${bdr}background:${cortBg};"></td>`;
+      } else {
+        html += `<td style="${bdr}background:${cortBg};text-align:center;font-weight:${tiene?'600':'400'};${tiene===0?'color:#ccc;':''}">${tiene}</td>`;
+      }
+    });
+    html += `<td style="${bdr}background:${cortBg};text-align:center;font-weight:bold;font-size:12pt;">${cTotal}</td>`;
+    html += '</tr>';
+    rowIdx++;
   });
 
   // Totals row
   const dayTotals = {};
   menuData.dias.forEach(d => { dayTotals[d.dia] = 0; });
   ordersData.forEach(o => { menuData.dias.forEach(d => { dayTotals[d.dia] += (o.detalle && o.detalle[d.dia]) || 0; }); });
+  cortesiasData.forEach(c => { menuData.dias.forEach(d => { dayTotals[d.dia] += (c.dias && c.dias[d.dia]) ? 1 : 0; }); });
   const gt = Object.values(dayTotals).reduce((a,b) => a+b, 0);
 
   html += '<tr>';
@@ -1521,30 +1571,51 @@ async function limpiarPedidos() {
 }
 
 // --- CORTESIAS ---
-function isCortesia(numEmpleado) {
-  return cortesiasData.some(c => c.numEmpleado === numEmpleado);
-}
+// cortesiasData = [{ nombre: "Juan", dias: { "Lunes": 1, "Miercoles": 1 } }]
 
 function renderCortesias() {
+  // Render day checkboxes
+  const diasDiv = document.getElementById('cortesiaDias');
+  diasDiv.style.display = 'block';
+  diasDiv.innerHTML = '<div class="cortesia-dias-select">' +
+    menuData.dias.map(d => `
+      <div class="cortesia-dia-check">
+        <input type="checkbox" id="cortDia-${d.dia}" value="${d.dia}" />
+        <label for="cortDia-${d.dia}">${d.dia.substring(0,3)}</label>
+      </div>
+    `).join('') + '</div>';
+
+  // Render list
   const list = document.getElementById('cortesiaList');
   if (!cortesiasData.length) { list.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:8px;">No hay cortesias registradas</div>'; return; }
-  list.innerHTML = cortesiasData.map((c, i) => `
+  list.innerHTML = cortesiasData.map((c, i) => {
+    const dias = Object.keys(c.dias || {}).join(', ');
+    return `
     <div class="cortesia-item">
-      <span class="cortesia-info">${c.numEmpleado}<small>${c.nombre || ''}</small></span>
+      <div>
+        <span class="cortesia-info">${c.nombre}</span>
+        <div class="cortesia-dias">${dias || 'Sin dias'}</div>
+      </div>
       <button class="cortesia-remove" onclick="quitarCortesia(${i})">Quitar</button>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 async function agregarCortesia() {
-  const num = document.getElementById('cortesiaNum').value.trim();
   const nombre = document.getElementById('cortesiaNombre').value.trim();
-  if (!num) { showToast('Escribe el numero de empleado'); return; }
-  if (isCortesia(num)) { showToast('Ya esta registrado'); return; }
-  cortesiasData.push({ numEmpleado: num, nombre: nombre });
+  if (!nombre) { showToast('Escribe el nombre'); return; }
+
+  const dias = {};
+  menuData.dias.forEach(d => {
+    const cb = document.getElementById('cortDia-' + d.dia);
+    if (cb && cb.checked) dias[d.dia] = 1;
+  });
+  if (Object.keys(dias).length === 0) { showToast('Selecciona al menos un dia'); return; }
+
+  cortesiasData.push({ nombre, dias });
   await saveToCloud();
-  document.getElementById('cortesiaNum').value = '';
   document.getElementById('cortesiaNombre').value = '';
+  menuData.dias.forEach(d => { const cb = document.getElementById('cortDia-' + d.dia); if (cb) cb.checked = false; });
   renderCortesias();
   renderOrders();
   showToast('Cortesia agregada');
