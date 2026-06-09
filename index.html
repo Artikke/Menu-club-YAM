@@ -1086,10 +1086,17 @@ async function enviarPedido() {
     }
   });
 
-  // Cargar datos frescos antes de agregar para no sobrescribir pedidos de otros
-  await loadFromCloud();
-  ordersData.push(order);
-  await saveToCloud();
+  // Guardar con retry para evitar race condition
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await loadFromCloud();
+    ordersData.push(order);
+    await saveToCloud();
+    // Verificar que el pedido se guardo
+    await loadFromCloud();
+    const found = ordersData.find(o => o.nombre === order.nombre && o.fecha === order.fecha);
+    if (found) break; // Exito
+    if (attempt === 2) { showToast('Error al guardar, intenta de nuevo'); return; }
+  }
 
   document.getElementById('modalSummary').textContent = buildResumen();
   document.getElementById('modalBg').classList.add('open');
@@ -1759,24 +1766,35 @@ function buscarPedido() {
 async function cancelarDia(orderIdx, dia) {
   if (!adminVisible && !isCancelOpen()) { showToast('Horario de cancelacion cerrado'); return; }
 
-  // Cargar datos frescos para no sobrescribir pedidos de otros
-  await loadFromCloud();
+  // Cancelar con retry para evitar race condition
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await loadFromCloud();
 
-  const order = ordersData[orderIdx];
-  if (!order) { showToast('Pedido no encontrado, intenta de nuevo'); return; }
+    const order = ordersData[orderIdx];
+    if (!order) { showToast('Pedido no encontrado, intenta de nuevo'); return; }
 
-  delete order.detalle[dia];
-  if (order.opciones) delete order.opciones[dia];
-  order.total = Object.values(order.detalle).reduce((a,b) => a+b, 0);
+    const orderName = order.nombre;
+    const orderFecha = order.fecha;
 
-  // Si ya no tiene dias, quitar el pedido completo
-  if (Object.keys(order.detalle).length === 0) {
-    ordersData.splice(orderIdx, 1);
+    delete order.detalle[dia];
+    if (order.opciones) delete order.opciones[dia];
+    order.total = Object.values(order.detalle).reduce((a,b) => a+b, 0);
+
+    if (Object.keys(order.detalle).length === 0) {
+      ordersData.splice(orderIdx, 1);
+    }
+
+    await saveToCloud();
+    // Verificar que la cancelacion se guardo
+    await loadFromCloud();
+    const still = ordersData.find(o => o.nombre === orderName && o.fecha === orderFecha);
+    // Si se elimino completo y no existe, exito. Si existe, verificar que el dia ya no este
+    if (!still || !still.detalle[dia]) break;
+    if (attempt === 2) { showToast('Error al cancelar, intenta de nuevo'); return; }
   }
 
-  await saveToCloud();
   showToast(`${dia} cancelado`);
-  buscarPedido(); // Refrescar la lista
+  buscarPedido();
   if (adminVisible) renderOrders();
 }
 
