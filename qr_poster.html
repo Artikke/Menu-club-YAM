@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PROESA - QR Menu Semanal</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #f0f4f8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.poster {
+  width: 600px;
+  background: #ffffff;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(26,82,118,0.15);
+}
+
+.poster-header {
+  background: linear-gradient(135deg, #1a5276 0%, #0f9b8e 100%);
+  padding: 40px 40px 30px;
+  text-align: center;
+  position: relative;
+}
+
+.poster-header::after {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  left: 0; right: 0;
+  height: 40px;
+  background: #ffffff;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+}
+
+.logo-circle {
+  width: 90px; height: 90px;
+  background: #fff;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+
+.logo-circle img {
+  width: 75px; height: 75px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.poster-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.poster-subtitle {
+  font-size: 0.95rem;
+  color: rgba(255,255,255,0.85);
+  font-weight: 400;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.poster-body {
+  padding: 30px 40px 20px;
+  text-align: center;
+}
+
+.scan-text {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1a5276;
+  margin-bottom: 6px;
+}
+
+.scan-desc {
+  font-size: 0.95rem;
+  color: #7f8c8d;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.qr-container {
+  display: inline-block;
+  padding: 20px;
+  background: #ffffff;
+  border: 3px solid #0f9b8e;
+  border-radius: 20px;
+  box-shadow: 0 8px 30px rgba(15,155,142,0.12);
+  margin-bottom: 20px;
+}
+
+.qr-container canvas, .qr-container img {
+  display: block;
+}
+
+.url-display {
+  display: inline-block;
+  background: linear-gradient(135deg, #1a5276, #0f9b8e);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 25px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.poster-footer {
+  background: #f8fafb;
+  border-top: 1px solid #ecf0f1;
+  padding: 20px 40px;
+  text-align: center;
+}
+
+.schedule-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1a5276;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.schedule-grid {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.schedule-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid #ecf0f1;
+}
+
+.schedule-icon {
+  width: 28px; height: 28px;
+  background: linear-gradient(135deg, #1a5276, #0f9b8e);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+.schedule-info {
+  text-align: left;
+}
+
+.schedule-info .label {
+  font-size: 0.65rem;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.schedule-info .time {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1a5276;
+}
+
+.poster-bottom {
+  background: linear-gradient(135deg, #1a5276 0%, #0f9b8e 100%);
+  padding: 14px 40px;
+  text-align: center;
+}
+
+.poster-bottom p {
+  color: rgba(255,255,255,0.8);
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+}
+
+.print-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background: linear-gradient(135deg, #1a5276, #0f9b8e);
+  color: #fff;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 30px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(26,82,118,0.3);
+  transition: transform 0.2s;
+}
+.print-btn:hover { transform: scale(1.05); }
+
+@media print {
+  body { background: #fff; padding: 0; }
+  .poster { box-shadow: none; border-radius: 0; width: 100%; max-width: 600px; }
+  .print-btn { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="poster">
+  <div class="poster-header">
+    <div class="logo-circle">
+      <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxISEBIQEBAVFhUVFxUYGRUVFxYREBoVIBYbGhkYGRgdHykgHR8nHxgYJTIlJyotMDAuGiE0ODMtNyotLysBCgoKDg0OGBAQGisdHR0tLS0rLi8rNysrLy0tNzUrLi4tListLS0tLS0tLS0tLSstLSstLS0tLS0tLTctLS0tN//AABEIAMgAyAMBIgACEQEDEQH/xAAcAAEAAgIDAQAAAAAAAAAAAAAABgcBBQIDBAj/xABEEAABAwIDBAYIAgYKAwEAAAABAAIDBBEFEiEGMUFRBxMUImFxIzJCUoGRsdGhwRVTkrLw8TM0YnJzgpPC0uE1RLMX/8QAGQEBAAMBAQAAAAAAAAAAAAAAAAIDBAUB/8QAJxEAAgICAgEEAgIDAAAAAAAAAAECAxESBDEhEyJBURRhMnEjM7H/2gAMAwEAAhEDEQA/ALvIXJEQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAYRa3HMUFPHfe46NHjz8goc/aGoJv1pHgAAFdXRKayimy6MHhliIq5/T9R+ud+Cfp+o/XO/D7Kz8Sf2Q/Kj9Fioq5/T9R+ud+H2Us2Wq5ZYS6U37xAJ0JH81CzjyrWWThepvCN0i1e0mMso6d9RJ7I0buLnn1WhUvU9IeIvkMgqMgvoxrWZAOWoufilXHnb5RKdij2X6sKKbA7WCvhIfZs0ej2jcRwePBStVSi4vDJxaayjKIiidCIiAIiIAiIgCIiAIiIAiIgMLpqqhsbHPebNaLldygO1+NdY/qWHuMOpHtO+wVlVbnLBXZYoLJr8XxJ08pkO7c0cgvE0kmwFyeC6MymGxeD/wDsyD+4D+8vTnKNUDz4xdkiOdkl/VP/AGXLHZJf1T/2XK1kWT8x/Rp/FX2Vnh2DzSvDRG5o4ucCGgKxaSnbFG1jdA0WXeoF0qbT9nh7LE70sw1I3tj3E+Z3fNVuc75KJZGEak2QXpJ2n7ZU9XG70MRIbbc53tP/IeJ8FKMRrWQxPmkNmMBcT4L522lxl9ZUvqH6XNmt91g9Vv8cbrVxad5ZfSKbp6rCNWpFsLs4a2qawg9UyzpD4cG+bvutBBC57msY0lziAAN5J3BfQexezzaKlbFoXu70jub+XkNy38q7044XbM9UNmb2KMNAa0AAAAAaADgF2Ii8Y3GFDOknZxtTTGdthLC0uBOgcwauaT+I/7UzVWdKu09z2GF2gsZSOfBn5n4KypPZYKbpRUHkrRSfo9xZ8FdE1pOWZzY3t4G5sD8CfqoyrD6K9mTJJ22UdxhtGPefxd5D6+S1WyWHk86lNzWC2gsoiwnrhERAEREAREQBERAFwkYHAgi4IIIO6y5ogKb2wwM0k3dHon3LD9W/BaDMrwx/CWVUDoX8dWu4tdwP8cFSWIUr4ZXwyCzmGxH5jwXrcW7eOH2jBdXq8rotDYHaPr4+okPpYxoTvczn5hS9fP9BXvhkZLGbOYbg/l5Ky8c26jZhwqYiOtk7jWby2S3ev4N3/LmsvI4zU/auy+q32+fgi3S3tN1knYYnd1hvKRxfwZ8Pr5Kt1ykeXEucSSSSSdSTzW32SwF1bVMgbcN9Z7vdYN/x4DzXowjGmv+jPJucibdEezFz2+ZuguIgee5z/yHxVnzVsTDZ8jGnkXAKO7WUkkdKxlNdscYs5rdLMAsPgFXznrybJu2TkyN3K9B6KJdLHgi4II5jULkqt2X2iNM/K8kxOOo90+8FZUtZG2IzOeAwNzF1+7lte6qccGnj8iNsc/Jpdt9ohRUxeCOtfdsbf7XveQ+yoaWQucXOJLnEkk6kk7ytxtbj7q2pdKbhg7sbeTPud5WmjYSQACSTYAaknktlcNI+ezJfbvLx0bbZfA31lQ2Ftw3e93us4n8gr+oqRkUbIo22awBoA5BaHYTZwUVMA4elks6Q8jwb8PrdSZZbJ7M2cerSOX2zKIirNAREQBERAEREAREQBERAYUN6Q9m+0Rdoib6WMagb3s5eY4KZIQpQm4SUkRlFSWD5xzLpqmZm+I3KbdJGzXUSdpib6KQ94Dcx/2KhGZe7VYrIqSPPlFxeDXtYSQACSTYAb7q/Oj/AGaFFSgPHppLOkPI8GfD63UL6L9l+tmNbK3uRn0YO50nveTfr5K3V5/Nuy9EaaK8e5nFzQRYqtdsdnzTu62Meicf2Dy8uSsxdVTA17XMe0FrhYg7rLCng7yKI3Rw+yjHvTEMYnNIaQP9HmzEe1b3b8r62W02vwF1JLpcxO9R3+0+KjMki1Qw/J4mJ1Sa6Zq1Y3RXsznf22ZvdabRA8X8XfD6+Si+zWAOrapsTbhnrSOHss4/E7gr6pKZkUbY42hrWgAAbgAuXWfCPR4le/vfR3oiLKekEREAREQBERAEREAREQBERAEREB562kZLG6KRocxwsQdQQoX/APl9L1mbrZct75Lt+Wa11PFhThZOH8Xgi4J9nRRUjImNjjaGtaAABuAXoRFAkEREB4cVw6OoidDKLtcPiDwI8VWNV0Z1eciOSIsvo5xc028W2KttFOM3Hoot48LPMkaPZPZ1lFD1bTme7V77WLj9hyW8RFFvPllsYqKwjKIi4SCIiAIiIAiIgCIiALCyoL0rYvPTQQvp5XRl0hBLbajKSpQg5yUUck8LJOUVHU+J42+DtMckzorE5xkIsCQdN/AqZdGu2clWX09TYytbma8DLmbcA3HMEjcrp8aUU3lPBXG1N4J+ihHSti09NTRPp5TG4yhpItuyONvwULw+px6eITwvlfGb2cDFrY2Om/eCuQ47lHbKS/YlZh4wXWirPo724nmqOx1hzPObI+wa/M0XLXAabgfkp3j2Lx0lO+ol9Vg3De524NHmVCdUoy1fZKM01k2KKj37S4riMrhTGQAa5Ie41o4Zn/cpDtRimHTNbVdY4HUsm72Yf2X/AGKu/El1lZ+iHrL68F4IV4MExOOqgjqIj3Xi9uIO4g+IKrXpN2jq6euEVPUPY3q2HKLWuS7mqa6nOWvyTlNRWS2UVOiLaLnN+1F91ZOyQqBRxdsv1/fz5rF3rutu09Wy7ZVos5T/AKEZ7fBuUVU7d7ZVTqw0NESyzmsJb/SPkPAHgNbLV1P6dossr3zOBIGrxUNudzSLnfuU1xm0m2lki7VnoupF48JmlfBG+eMMkLQXsBuA7iFrdt8Y7JRSzA2fbKz++dAfhqfgqVFt4RY3hZN8iqTo32xqJKwQVUxe2RpDc1tHjUfMX/BW2pW1OuWGchNSWUZREVZIIiIAiIgCrjpr/q1P/in9wqxlXnTLA99NThjHOIlOjQXeweSu4/8AtiV2/wAWQvCNvp6eiFHFEyzQ8B5uXd5znXtu9pSHog2flbK+skYWsyFjMwsXXIJcPDT8VKujSmthlOHx2deS+YWd/Sv5qWBXXXr3RisZ7IQrfhsrzpq/qcH+MP8A5vUT2f6Q5aSljp20zXBmaz3Fwvdxdu+Kl/TJA99JCGNc49cD3QXH1HclxwTZ7teAx0725ZLSOZmFi14kfl+e7yKlXKCpWyyskZKTm8fRoOjDBpqitOIyCzGukdfdmlcCCAOQzH8FvumlzuyQAeqZtfPI635rRdF2IT0tS6kmikbHKbatdZso0/Hd8ArI2qwRtbSvp3GxNi12/K8bj+XkSuWz1vTfS/4dhHNbRouiSOMYc1zLZnPkz882awv/AJcq6ul+KM4fmfbMJGZDxub3Hyv8lAaZ+J4RI9rWOa0nW7esgd/aB/kUmGJ4vKwOY4tG45erp2czf+ZU/S/yepssdkd/brjyTroZc40MgO4TOy/sMv8AjdRDpf8A/JC36qP6uVs7NYMyjpo6dmuUau3ZnHVzlVnSzSyOxEOZG5wEUeoaXC93clGiale5L9kpxarSPUMV2i4Ryf6Mf/FWrQueYozJ65a3Nw71tfxVSjpExQadlZ/oy/8AJWJsZik1TSNmqGBshLwWhpaLBxA0Juq+RBpJtJf0Sra68kH2+2HqHVTqyjGfMQ5zGnLK149pvPdfndaam23xOjeGVQc4D2J2ZXkeDrA/HVbDaOTFqKvkqxmka/QOa0vgMfstc32bffVajGsarsWMcPZQcpJHVsdvOnec4kALTWsxSlhx+/oqk8N4ymXNgWKMqqeOojvlkF7HeDexHwIKrHphxXrKiKjYdIxmdrYZ3erfyb+8rA2Zw/sGHsikNzExznluuty91ufL4KrMB2elxSunkqRJG12aRzrWNye60XH8ALPQoKcpfCLLG3FL5Z59raSOjqKWWkmjflZGSY3Nd6Vlrk256H5q7cJr2zwRTs3SNa4eFxu+G5VptD0Xxw00s0Esr5GNzBpDbED1tw5XW26Ia2Ts8lLKxzTE7MzMC3uO3gX5Ov8AtKV7jOtSTzg5XmMsP5LCREWI0BERAEREAXVNI1ozOIAHEmwXatTjjW2jLn5cr7hzm5475SO/wtrzGtkS8nG8I2HXsDc+ZuX3rjL81lszSA4OBB3EHTlvUfje0iCSWMNiBl9Vp6rPmGWS3AEZtT7ySubaaRgtF1lMRpZpcJW53AcrZdfAqepDckTnAWud+7xWM411Gm/wWqratjjDM05mMkOZwBOW8bhc+F3D5ry1BziWQNLojLFewPfjAGaw3kX+diuKJ1yN2KqMguD25RvNxl+ay6pYG5y9ob7xIy/NamompzDO6MN9SxIbYE2OUXtqb/VcA+MPhkkA6vqrNJF2NffvX4AkcfApqc2N31jbA3FjuN9D5I6RovcgWFzc2sOajj6YPbZoc2J9Q0ssC0gZNXN5DNchJzIRWCQd5sDG3t3XWMveHmCNF3Qb/okLKlhBIe0gbyCCB5rlFK14zNcHDmDcLSP6t8DwZGEZmEuijsBZwIzNubi418F6sDlzCTus9Yd+MZWP7o1t4bt5XGjqlk94qWZsudublcZvkuYkba9xbnfTetFhr2ieQF8dzLJZpZ6Xf79/yXiMT2QOIBLJJDmbxa/rtHeRA1+B5rupzdkqkeACSQAOJ0C4slaRma4FvMEFvzXjxtjTF33FoDmm+UvaCDcZh7q1hmc+F0bI2kySZbxjq43sygvdru0Bbx1XFHJ1ywyQ5xYG4sd3is5gDa4ud3NRxspZExkgy9TOwe8BHvZr4A2+C91VVszwzB14x1jS8AloJAtfw0TUbGyfO0AkuAANjcgAHkuUUjXC7SCOYIIUeme0tMrh6N1S1wLhoWhgbmtyu0r24XlM0r4m2jLWC4GVjn3Ny3npa58uSOIUvJuERFEmEREAREQBYssogMWSyyiAxZLLKIDFkssogMWSyyiAxZLLKIDFkssogMWSyyiAxZLLKIDFllEQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQH/9k=" alt="PROESA" />
+    </div>
+    <div class="poster-title">PROESA</div>
+    <div class="poster-subtitle">Soluciones en Salud</div>
+  </div>
+
+  <div class="poster-body">
+    <div class="scan-text">Escanea para pedir tu comida</div>
+    <div class="scan-desc">Abre la camara de tu celular y apunta al codigo QR</div>
+    <div class="qr-container">
+      <div id="qrCode"></div>
+    </div>
+    <br/>
+    <div class="url-display">artikke.github.io/Menu-club-YAM</div>
+  </div>
+
+  <div class="poster-footer">
+    <div class="schedule-title">Horario de pedidos</div>
+    <div class="schedule-grid">
+      <div class="schedule-item">
+        <div class="schedule-icon">&#9749;</div>
+        <div class="schedule-info">
+          <div class="label">Pedir</div>
+          <div class="time">7:00 - 10:00 AM</div>
+        </div>
+      </div>
+      <div class="schedule-item">
+        <div class="schedule-icon">&#10060;</div>
+        <div class="schedule-info">
+          <div class="label">Cancelar</div>
+          <div class="time">Hasta las 10:00 AM</div>
+        </div>
+      </div>
+      <div class="schedule-item">
+        <div class="schedule-icon">&#127769;</div>
+        <div class="schedule-info">
+          <div class="label">Dia siguiente</div>
+          <div class="time">5:00 PM - 12:00 AM</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="poster-bottom">
+    <p>LUNES A VIERNES &bull; MENU SEMANAL</p>
+  </div>
+</div>
+
+<button class="print-btn" onclick="window.print()">Imprimir</button>
+
+<script>
+var qr = qrcode(0, 'M');
+qr.addData('https://artikke.github.io/Menu-club-YAM/');
+qr.make();
+document.getElementById('qrCode').innerHTML = qr.createSvgTag({
+  cellSize: 6,
+  margin: 0,
+  scalable: true
+});
+</script>
+</body>
+</html>
