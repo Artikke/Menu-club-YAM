@@ -1086,6 +1086,8 @@ async function enviarPedido() {
     }
   });
 
+  // Cargar datos frescos antes de agregar para no sobrescribir pedidos de otros
+  await loadFromCloud();
   ordersData.push(order);
   await saveToCloud();
 
@@ -1653,13 +1655,6 @@ function isDayPassed(dayName) {
   if (dayNum === undefined) return false;
   // Dias anteriores siempre bloqueados
   if (dayNum < today) return true;
-  // TEMPORAL: hoy martes 9 junio extender hasta 11:30
-  const now2 = new Date();
-  if (dayNum === 2 && today === 2 && now2.getDate() === 9 && now2.getMonth() === 5 && now2.getFullYear() === 2026) {
-    const m = now2.getMinutes();
-    if (now2.getHours() < 11 || (now2.getHours() === 11 && m <= 30)) return false;
-    return true;
-  }
   // El mismo dia se bloquea despues de las 10 AM
   if (dayNum === today && hour >= 10) return true;
   return false;
@@ -1674,10 +1669,6 @@ function isOrderingOpen() {
   const hour = now.getHours();
   const min = now.getMinutes();
   if (day === 0 || day === 6) return false;
-  // TEMPORAL: hoy martes 9 junio extender hasta 11:30 AM
-  if (day === 2 && now.getDate() === 9 && now.getMonth() === 5 && now.getFullYear() === 2026) {
-    return hour >= 7 && (hour < 11 || (hour === 11 && min <= 30));
-  }
   return hour >= 7 && hour < 10;
 }
 
@@ -1757,8 +1748,12 @@ function buscarPedido() {
 
 async function cancelarDia(orderIdx, dia) {
   if (!adminVisible && !isCancelOpen()) { showToast('Horario de cancelacion cerrado'); return; }
+
+  // Cargar datos frescos para no sobrescribir pedidos de otros
+  await loadFromCloud();
+
   const order = ordersData[orderIdx];
-  if (!order) return;
+  if (!order) { showToast('Pedido no encontrado, intenta de nuevo'); return; }
 
   delete order.detalle[dia];
   if (order.opciones) delete order.opciones[dia];
