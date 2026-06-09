@@ -108,7 +108,7 @@ body {
   margin-bottom: 20px;
 }
 
-.qr-container canvas, .qr-container img {
+.qr-container canvas {
   display: block;
 }
 
@@ -238,8 +238,8 @@ body {
   <div class="poster-body">
     <div class="scan-text">Escanea para pedir tu comida</div>
     <div class="scan-desc">Abre la camara de tu celular y apunta al codigo QR</div>
-    <div class="qr-container">
-      <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://artikke.github.io/Menu-club-YAM/" alt="QR Code" width="250" height="250" />
+    <div class="qr-container" id="qrBox">
+      <div id="qrLoading" style="width:250px;height:250px;display:flex;align-items:center;justify-content:center;color:#7f8c8d;">Cargando QR...</div>
     </div>
     <br/>
     <div class="url-display">artikke.github.io/Menu-club-YAM</div>
@@ -279,5 +279,28 @@ body {
 
 <button class="print-btn" onclick="window.print()">Imprimir</button>
 
+<script>
+// Generar QR con API, fallback a segunda API
+const qrUrl = 'https://artikke.github.io/Menu-club-YAM/';
+const box = document.getElementById('qrBox');
+const img = new Image();
+img.width = 250; img.height = 250;
+img.alt = 'QR Code';
+img.style.display = 'block';
+img.onload = function() { box.innerHTML = ''; box.appendChild(img); };
+img.onerror = function() {
+  // Fallback API
+  const img2 = new Image();
+  img2.width = 250; img2.height = 250;
+  img2.alt = 'QR Code';
+  img2.style.display = 'block';
+  img2.onload = function() { box.innerHTML = ''; box.appendChild(img2); };
+  img2.onerror = function() {
+    document.getElementById('qrLoading').textContent = 'Visita: artikke.github.io/Menu-club-YAM';
+  };
+  img2.src = 'https://chart.googleapis.com/chart?chs=250x250&cht=qr&chl=' + encodeURIComponent(qrUrl);
+};
+img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(qrUrl);
+</script>
 </body>
 </html>
