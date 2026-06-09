@@ -1655,6 +1655,12 @@ function isDayPassed(dayName) {
   if (dayNum === undefined) return false;
   // Dias anteriores siempre bloqueados
   if (dayNum < today) return true;
+  // TEMPORAL: hoy martes 9 junio extender hasta 11:30
+  if (dayNum === 2 && today === 2 && now.getDate() === 9 && now.getMonth() === 5 && now.getFullYear() === 2026) {
+    const m = now.getMinutes();
+    if (now.getHours() < 11 || (now.getHours() === 11 && m <= 30)) return false;
+    return true;
+  }
   // El mismo dia se bloquea despues de las 10 AM
   if (dayNum === today && hour >= 10) return true;
   return false;
@@ -1669,6 +1675,10 @@ function isOrderingOpen() {
   const hour = now.getHours();
   const min = now.getMinutes();
   if (day === 0 || day === 6) return false;
+  // TEMPORAL: hoy martes 9 junio extender hasta 11:30 AM
+  if (day === 2 && now.getDate() === 9 && now.getMonth() === 5 && now.getFullYear() === 2026) {
+    return hour >= 7 && (hour < 11 || (hour === 11 && min <= 30));
+  }
   return hour >= 7 && hour < 10;
 }
 
