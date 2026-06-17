@@ -939,6 +939,7 @@ let menuData = JSON.parse(JSON.stringify(DEFAULT_MENU));
 let ordersData = [];
 let cortesiasData = [];
 let catalogoData = {};
+let historialData = {};
 let quantities = {};
 let selections = {};
 let adminAuth = false;
@@ -959,6 +960,7 @@ async function loadFromCloud() {
     if (Array.isArray(d?.orders)) ordersData = d.orders;
     if (Array.isArray(d?.cortesias)) cortesiasData = d.cortesias;
     if (d?.catalogo && typeof d.catalogo === 'object') catalogoData = d.catalogo;
+    if (d?.historial && typeof d.historial === 'object') historialData = d.historial;
     setSyncStatus('ok', 'Sincronizado');
     return true;
   } catch(e) { setSyncStatus('error', 'Sin conexion'); return false; }
@@ -970,7 +972,7 @@ async function saveToCloud() {
     const r = await fetch(BIN_URL, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
-      body: JSON.stringify({ menu: menuData, orders: ordersData, cortesias: cortesiasData, catalogo: catalogoData })
+      body: JSON.stringify({ menu: menuData, orders: ordersData, cortesias: cortesiasData, catalogo: catalogoData, historial: historialData })
     });
     if (!r.ok) throw new Error(r.status);
     setSyncStatus('ok', 'Sincronizado');
@@ -1618,12 +1620,43 @@ function exportarCSV() {
   showToast('Excel descargado');
 }
 
+function getQuincenaKey(fecha) {
+  const f = new Date(fecha);
+  const m = f.getMonth();
+  const a = f.getFullYear();
+  const q = f.getDate() <= 15 ? 'Q1' : 'Q2';
+  return `${a}-${m}-${q}`;
+}
+
+function archivarPedidos() {
+  ordersData.forEach(o => {
+    const key = getQuincenaKey(o.fecha);
+    if (!historialData[key]) historialData[key] = {};
+    const emp = o.numEmpleado || '0';
+    if (!historialData[key][emp]) historialData[key][emp] = { nombre: o.nombre, comidas: 0 };
+    historialData[key][emp].comidas += o.total || 0;
+  });
+  // Archivar cortesias tambien
+  if (cortesiasData.length > 0) {
+    const now = new Date();
+    const key = getQuincenaKey(now.toISOString());
+    if (!historialData[key]) historialData[key] = {};
+    if (!historialData[key]._cortesias) historialData[key]._cortesias = [];
+    cortesiasData.forEach(c => {
+      const dias = c.dias ? Object.keys(c.dias).length : 0;
+      if (dias > 0) historialData[key]._cortesias.push({ nombre: c.nombre, comidas: dias });
+    });
+  }
+}
+
 async function limpiarPedidos() {
-  if (confirm('Borrar todos los pedidos?')) {
+  if (confirm('Borrar todos los pedidos? Se guardaran en el historial para el reporte BUK.')) {
+    archivarPedidos();
     ordersData = [];
+    cortesiasData = [];
     await saveToCloud();
     renderOrders();
-    showToast('Pedidos eliminados');
+    showToast('Pedidos archivados y limpiados');
   }
 }
 
@@ -1863,12 +1896,21 @@ function exportarBUK() {
   const anio = parseInt(document.getElementById('bukAnio').value);
   const desde = bukQuincena === 1 ? 1 : 16;
   const hasta = bukQuincena === 1 ? 15 : new Date(anio, mes + 1, 0).getDate();
+  const histKey = `${anio}-${mes}-Q${bukQuincena}`;
 
   const fechaDesde = new Date(anio, mes, desde);
   const fechaHasta = new Date(anio, mes, hasta, 23, 59, 59);
 
-  // Count meals per employee in the period
+  // Start with archived historial for this period
   const conteo = {};
+  if (historialData[histKey]) {
+    Object.entries(historialData[histKey]).forEach(([emp, data]) => {
+      if (emp === '_cortesias') return;
+      conteo[emp] = { nombre: data.nombre, comidas: data.comidas };
+    });
+  }
+
+  // Add current orders that fall in this period (not yet archived)
   ordersData.forEach(o => {
     const f = new Date(o.fecha);
     if (f >= fechaDesde && f <= fechaHasta) {
@@ -1878,15 +1920,24 @@ function exportarBUK() {
     }
   });
 
-  // Count cortesias in the period (cortesias don't have dates, count all current ones)
+  // Cortesias: archived + current
   let totalCortesias = 0;
   const cortesiasList = [];
+  const cortesiasMap = {};
+  // From historial
+  if (historialData[histKey]?._cortesias) {
+    historialData[histKey]._cortesias.forEach(c => {
+      cortesiasMap[c.nombre] = (cortesiasMap[c.nombre] || 0) + c.comidas;
+    });
+  }
+  // Current cortesias
   cortesiasData.forEach(c => {
     const dias = c.dias ? Object.keys(c.dias).length : 0;
-    if (dias > 0) {
-      totalCortesias += dias;
-      cortesiasList.push({ nombre: c.nombre, dias });
-    }
+    if (dias > 0) cortesiasMap[c.nombre] = (cortesiasMap[c.nombre] || 0) + dias;
+  });
+  Object.entries(cortesiasMap).forEach(([nombre, dias]) => {
+    totalCortesias += dias;
+    cortesiasList.push({ nombre, dias });
   });
 
   const PRECIO = 56.71;
