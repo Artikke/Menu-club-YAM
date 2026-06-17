@@ -563,6 +563,17 @@ body {
   cursor: pointer; font-family: 'Inter', sans-serif;
 }
 
+.buk-q-btn {
+  flex: 1; padding: 12px; border-radius: 10px;
+  border: 2px solid #ddd; background: #fff;
+  font-weight: 600; font-size: 0.95rem;
+  cursor: pointer; transition: all 0.2s;
+}
+.buk-q-active {
+  border-color: #8e44ad; background: linear-gradient(135deg,#8e44ad,#3498db);
+  color: #fff;
+}
+
 .toast {
   position: fixed; top: 20px; left: 50%;
   transform: translateX(-50%) translateY(-80px);
@@ -750,8 +761,8 @@ body { padding-bottom: 80px; }
 <div class="lock-overlay" id="lockOverlay">
   <div class="lock-icon">&#128274;</div>
   <h3>Pedidos Cerrados</h3>
-  <p id="lockMsg">El horario de pedidos es de <span class="lock-time">7:00 a 10:00 AM</span><br>
-  Cancelaciones: <span class="lock-time">7:00 - 10:00 AM</span> y <span class="lock-time">5:00 PM - 12:00 AM</span></p>
+  <p id="lockMsg">El horario de pedidos es de <span class="lock-time">7:00 a 11:30 AM</span><br>
+  Cancelaciones: <span class="lock-time">7:00 - 11:30 AM</span> y <span class="lock-time">5:00 PM - 12:00 AM</span></p>
 </div>
 
 <!-- DATOS EMPLEADO -->
@@ -867,9 +878,41 @@ body { padding-bottom: 80px; }
         Enviar Orden a Cocina
       </button>
       <button class="btn-export" onclick="exportarCSV()">Exportar Excel</button>
+      <button class="btn-export" onclick="mostrarExportBUK()" style="background:linear-gradient(135deg,#8e44ad,#3498db);">Exportar BUK</button>
       <button class="btn-clear-orders" onclick="limpiarPedidos()">Limpiar</button>
     </div>
     <div id="ordersContainer"></div>
+  </div>
+</div>
+
+<!-- BUK EXPORT MODAL -->
+<div id="bukModalBg" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:none;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:30px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <h3 style="font-family:'Montserrat',sans-serif;color:#1a5276;margin-bottom:16px;text-align:center;">Exportar a BUK</h3>
+    <div style="margin-bottom:14px;">
+      <label style="font-weight:600;color:#1a5276;font-size:0.9rem;">Mes</label>
+      <select id="bukMes" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-top:4px;font-size:0.95rem;">
+        <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option>
+        <option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option>
+        <option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option>
+        <option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+      </select>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-weight:600;color:#1a5276;font-size:0.9rem;">Anio</label>
+      <input type="number" id="bukAnio" value="2026" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-top:4px;font-size:0.95rem;"/>
+    </div>
+    <div style="margin-bottom:20px;">
+      <label style="font-weight:600;color:#1a5276;font-size:0.9rem;">Quincena</label>
+      <div style="display:flex;gap:10px;margin-top:6px;">
+        <button id="bukQ1" onclick="selQuincena(1)" class="buk-q-btn buk-q-active">1 - 15</button>
+        <button id="bukQ2" onclick="selQuincena(2)" class="buk-q-btn">16 - 31</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="cerrarBukModal()" style="flex:1;padding:12px;border-radius:10px;border:1px solid #ddd;background:#fff;font-weight:600;cursor:pointer;">Cancelar</button>
+      <button onclick="exportarBUK()" style="flex:1;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#8e44ad,#3498db);color:#fff;font-weight:700;cursor:pointer;">Descargar</button>
+    </div>
   </div>
 </div>
 
@@ -894,7 +937,8 @@ const DEFAULT_MENU = {
 // --- STATE ---
 let menuData = JSON.parse(JSON.stringify(DEFAULT_MENU));
 let ordersData = [];
-let cortesiasData = []; // [{numEmpleado, nombre}]
+let cortesiasData = [];
+let catalogoData = {};
 let quantities = {};
 let selections = {};
 let adminAuth = false;
@@ -914,6 +958,7 @@ async function loadFromCloud() {
     if (d?.menu?.dias) menuData = d.menu;
     if (Array.isArray(d?.orders)) ordersData = d.orders;
     if (Array.isArray(d?.cortesias)) cortesiasData = d.cortesias;
+    if (d?.catalogo && typeof d.catalogo === 'object') catalogoData = d.catalogo;
     setSyncStatus('ok', 'Sincronizado');
     return true;
   } catch(e) { setSyncStatus('error', 'Sin conexion'); return false; }
@@ -925,7 +970,7 @@ async function saveToCloud() {
     const r = await fetch(BIN_URL, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
-      body: JSON.stringify({ menu: menuData, orders: ordersData, cortesias: cortesiasData })
+      body: JSON.stringify({ menu: menuData, orders: ordersData, cortesias: cortesiasData, catalogo: catalogoData })
     });
     if (!r.ok) throw new Error(r.status);
     setSyncStatus('ok', 'Sincronizado');
@@ -1788,6 +1833,147 @@ async function cancelarDia(orderIdx, dia) {
   showToast(`${dia} cancelado`);
   buscarPedido();
   if (adminVisible) renderOrders();
+}
+
+// --- BUK EXPORT ---
+let bukQuincena = 1;
+
+function mostrarExportBUK() {
+  const now = new Date();
+  document.getElementById('bukMes').value = now.getMonth();
+  document.getElementById('bukAnio').value = now.getFullYear();
+  bukQuincena = now.getDate() <= 15 ? 1 : 2;
+  selQuincena(bukQuincena);
+  const modal = document.getElementById('bukModalBg');
+  modal.style.display = 'flex';
+}
+
+function cerrarBukModal() {
+  document.getElementById('bukModalBg').style.display = 'none';
+}
+
+function selQuincena(q) {
+  bukQuincena = q;
+  document.getElementById('bukQ1').className = 'buk-q-btn' + (q === 1 ? ' buk-q-active' : '');
+  document.getElementById('bukQ2').className = 'buk-q-btn' + (q === 2 ? ' buk-q-active' : '');
+}
+
+function exportarBUK() {
+  const mes = parseInt(document.getElementById('bukMes').value);
+  const anio = parseInt(document.getElementById('bukAnio').value);
+  const desde = bukQuincena === 1 ? 1 : 16;
+  const hasta = bukQuincena === 1 ? 15 : new Date(anio, mes + 1, 0).getDate();
+
+  const fechaDesde = new Date(anio, mes, desde);
+  const fechaHasta = new Date(anio, mes, hasta, 23, 59, 59);
+
+  // Count meals per employee in the period
+  const conteo = {};
+  ordersData.forEach(o => {
+    const f = new Date(o.fecha);
+    if (f >= fechaDesde && f <= fechaHasta) {
+      const key = o.numEmpleado || '0';
+      if (!conteo[key]) conteo[key] = { nombre: o.nombre, comidas: 0 };
+      conteo[key].comidas += o.total || 0;
+    }
+  });
+
+  // Count cortesias in the period (cortesias don't have dates, count all current ones)
+  let totalCortesias = 0;
+  const cortesiasList = [];
+  cortesiasData.forEach(c => {
+    const dias = c.dias ? Object.keys(c.dias).length : 0;
+    if (dias > 0) {
+      totalCortesias += dias;
+      cortesiasList.push({ nombre: c.nombre, dias });
+    }
+  });
+
+  const PRECIO = 56.71;
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const hd = '#1a5276';
+  const bdr = 'border:1px solid #bdc3c7;padding:8px 12px;';
+
+  // BUK Layout
+  let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"/></head><body>';
+
+  // Sheet 1: BUK
+  html += '<table style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:11pt;">';
+  html += `<tr><td colspan="4" style="${bdr}background:${hd};color:#fff;font-size:14pt;font-weight:bold;text-align:center;padding:12px;">Descuento Comedor - ${meses[mes]} ${anio} (${desde}-${hasta})</td></tr>`;
+  html += `<tr>`;
+  html += `<th style="${bdr}background:${hd};color:#fff;font-weight:bold;">Numero de Documento</th>`;
+  html += `<th style="${bdr}background:${hd};color:#fff;font-weight:bold;">Ficha</th>`;
+  html += `<th style="${bdr}background:${hd};color:#fff;font-weight:bold;">Col</th>`;
+  html += `<th style="${bdr}background:${hd};color:#fff;font-weight:bold;">Valor</th>`;
+  html += `</tr>`;
+
+  const sorted = Object.entries(conteo).sort((a, b) => (parseInt(a[0]) || 99999) - (parseInt(b[0]) || 99999));
+  let totalValor = 0;
+  let sinRFC = [];
+
+  sorted.forEach(([numEmp, data]) => {
+    let cat = catalogoData[numEmp];
+    if (!cat) {
+      const match = Object.entries(catalogoData).find(([k]) => k.replace(/\D/g,'') === numEmp);
+      if (match) cat = match[1];
+    }
+    const rfc = cat ? cat.rfc : '';
+    if (!rfc) sinRFC.push({ num: numEmp, nombre: data.nombre });
+    const valor = (data.comidas * PRECIO).toFixed(2);
+    totalValor += data.comidas * PRECIO;
+    const bg = sorted.indexOf(sorted.find(s => s[0] === numEmp)) % 2 === 0 ? '#fff' : '#eaf2f8';
+    html += `<tr>`;
+    html += `<td style="${bdr}background:${bg};">${rfc || 'NO ENCONTRADO'}</td>`;
+    html += `<td style="${bdr}background:${bg};text-align:center;">${numEmp}</td>`;
+    html += `<td style="${bdr}background:${bg};text-align:center;">${numEmp}</td>`;
+    html += `<td style="${bdr}background:${bg};text-align:right;">${valor}</td>`;
+    html += `</tr>`;
+  });
+
+  html += `<tr>`;
+  html += `<td colspan="3" style="${bdr}background:${hd};color:#fff;font-weight:bold;text-align:right;">TOTAL</td>`;
+  html += `<td style="${bdr}background:${hd};color:#fff;font-weight:bold;text-align:right;">${totalValor.toFixed(2)}</td>`;
+  html += `</tr>`;
+  html += '</table>';
+
+  // Cortesias section
+  html += '<br/><table style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:11pt;">';
+  html += `<tr><td colspan="3" style="${bdr}background:#f39c12;color:#fff;font-size:13pt;font-weight:bold;text-align:center;padding:10px;">Cortesias - ${meses[mes]} ${anio} (${desde}-${hasta})</td></tr>`;
+  html += `<tr>`;
+  html += `<th style="${bdr}background:#f39c12;color:#fff;font-weight:bold;">Nombre</th>`;
+  html += `<th style="${bdr}background:#f39c12;color:#fff;font-weight:bold;">Comidas</th>`;
+  html += `<th style="${bdr}background:#f39c12;color:#fff;font-weight:bold;">Valor (sin cobro)</th>`;
+  html += `</tr>`;
+
+  cortesiasList.forEach(c => {
+    html += `<tr>`;
+    html += `<td style="${bdr}">${c.nombre}</td>`;
+    html += `<td style="${bdr}text-align:center;">${c.dias}</td>`;
+    html += `<td style="${bdr}text-align:right;">${(c.dias * PRECIO).toFixed(2)}</td>`;
+    html += `</tr>`;
+  });
+
+  html += `<tr>`;
+  html += `<td style="${bdr}font-weight:bold;">TOTAL CORTESIAS</td>`;
+  html += `<td style="${bdr}text-align:center;font-weight:bold;">${totalCortesias}</td>`;
+  html += `<td style="${bdr}text-align:right;font-weight:bold;">${(totalCortesias * PRECIO).toFixed(2)}</td>`;
+  html += `</tr>`;
+  html += '</table>';
+
+  html += '</body></html>';
+
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `BUK_Comedor_${meses[mes]}${anio}_Q${bukQuincena}.xls`;
+  a.click();
+  cerrarBukModal();
+
+  if (sinRFC.length > 0) {
+    showToast(`${sinRFC.length} empleado(s) sin RFC en catalogo`);
+  } else {
+    showToast('Reporte BUK descargado');
+  }
 }
 
 // Check every 60 seconds
