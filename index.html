@@ -280,6 +280,19 @@ body {
   font-style: italic;
 }
 
+#misPedidos {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: #eaf2f8;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: #1a5276;
+  display: none;
+}
+#misPedidos.visible { display: block; }
+#misPedidos .mp-title { font-weight: 700; margin-bottom: 6px; }
+#misPedidos .mp-dia { padding: 2px 0; }
+
 /* SUMMARY BAR */
 .summary-bar {
   position: fixed;
@@ -771,7 +784,8 @@ body { padding-bottom: 80px; }
   <input type="text" id="nombreInput" placeholder="Escribe tu nombre completo" />
   <div style="height:10px"></div>
   <label>No. de empleado</label>
-  <input type="text" id="numEmpleado" placeholder="Ej: 1234" inputmode="numeric" />
+  <input type="text" id="numEmpleado" placeholder="Ej: 1234" inputmode="numeric" oninput="mostrarMisPedidos()" />
+  <div id="misPedidos"></div>
 </div>
 
 <div class="water-note">* Incluye agua del dia</div>
@@ -1866,6 +1880,51 @@ async function cancelarDia(orderIdx, dia) {
   showToast(`${dia} cancelado`);
   buscarPedido();
   if (adminVisible) renderOrders();
+}
+
+// --- MIS PEDIDOS ---
+function mostrarMisPedidos() {
+  const num = document.getElementById('numEmpleado').value.trim();
+  const el = document.getElementById('misPedidos');
+  if (!num || num.length < 1) { el.classList.remove('visible'); return; }
+
+  // Current orders for this employee
+  const misPedidos = ordersData.filter(o => o.numEmpleado === num);
+  // Historial for current quincena
+  const now = new Date();
+  const qKey = getQuincenaKey(now.toISOString());
+  const hist = historialData[qKey]?.[num];
+
+  let totalComidas = 0;
+  const dias = [];
+
+  // From historial (archived weeks)
+  if (hist) totalComidas += hist.comidas;
+
+  // From current orders
+  misPedidos.forEach(o => {
+    totalComidas += o.total || 0;
+    Object.entries(o.detalle || {}).forEach(([dia, qty]) => {
+      if (qty > 0) {
+        const opcion = o.opciones?.[dia] || '';
+        dias.push(`${dia}: ${opcion || 'Plato del dia'}`);
+      }
+    });
+  });
+
+  if (totalComidas === 0) { el.classList.remove('visible'); return; }
+
+  const q = now.getDate() <= 15 ? '1-15' : '16-' + new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  let html = `<div class="mp-title">Tus pedidos esta quincena (${q}): ${totalComidas} comida${totalComidas > 1 ? 's' : ''}</div>`;
+  if (dias.length > 0) {
+    html += '<div style="margin-top:4px;font-size:0.8rem;color:#7f8c8d;">Esta semana:</div>';
+    dias.forEach(d => { html += `<div class="mp-dia">• ${d}</div>`; });
+  }
+  if (hist && hist.comidas > 0) {
+    html += `<div style="margin-top:4px;font-size:0.8rem;color:#7f8c8d;">Semanas anteriores: ${hist.comidas} comida${hist.comidas > 1 ? 's' : ''}</div>`;
+  }
+  el.innerHTML = html;
+  el.classList.add('visible');
 }
 
 // --- BUK EXPORT ---
