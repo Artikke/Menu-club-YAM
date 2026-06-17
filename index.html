@@ -883,6 +883,21 @@ body { padding-bottom: 80px; }
     <div class="cortesia-list" id="cortesiaList"></div>
   </div>
 
+  <!-- CATALOGO -->
+  <div class="cortesias-section">
+    <h4>Catalogo de Empleados <span id="catalogoCount" style="font-weight:400;font-size:0.85rem;color:var(--muted);"></span></h4>
+    <div class="cortesia-add">
+      <input type="text" id="catNumEmp" placeholder="No. empleado" style="flex:1;max-width:120px" />
+      <input type="text" id="catNombre" placeholder="Nombre completo" style="flex:2" />
+      <input type="text" id="catRFC" placeholder="RFC" style="flex:1.5" />
+      <button onclick="agregarEmpleado()">Agregar</button>
+    </div>
+    <div style="margin-top:8px;">
+      <input type="text" id="catBuscar" placeholder="Buscar empleado..." oninput="buscarEmpleadoCat()" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #ddd;font-size:0.9rem;" />
+    </div>
+    <div class="cortesia-list" id="catalogoList" style="max-height:300px;overflow-y:auto;"></div>
+  </div>
+
   <!-- ORDERS -->
   <div class="orders-log">
     <h3>Pedidos Recibidos</h3>
@@ -1135,6 +1150,13 @@ async function enviarPedido() {
   if (!nombre) { showToast('Escribe tu nombre'); document.getElementById('nombreInput').focus(); return; }
   if (!numEmp) { showToast('Escribe tu numero de empleado'); document.getElementById('numEmpleado').focus(); return; }
   if (!/^\d+$/.test(numEmp)) { showToast('El numero de empleado debe ser solo digitos'); document.getElementById('numEmpleado').focus(); return; }
+  const numNormVal = numEmp.replace(/^0+/, '') || '0';
+  const catMatch = catalogoData[numEmp] || catalogoData[numNormVal] || Object.values(catalogoData).length === 0;
+  if (!catMatch && !adminVisible) {
+    showToast('Numero de empleado no encontrado. Contacta a RRHH.');
+    document.getElementById('numEmpleado').focus();
+    return;
+  }
   const total = Object.values(quantities).reduce((a,b)=>a+b, 0);
   if (total === 0) return;
 
@@ -1218,7 +1240,7 @@ let adminVisible = false;
 function toggleAdmin() {
   adminVisible = !adminVisible;
   document.getElementById('adminPanel').classList.toggle('visible', adminVisible);
-  if (adminVisible) { populateAdminForm(); renderOrders(); renderCortesias(); }
+  if (adminVisible) { populateAdminForm(); renderOrders(); renderCortesias(); renderCatalogo(); }
   if (typeof checkOrderLock === 'function') checkOrderLock();
 }
 
@@ -1980,6 +2002,70 @@ function mostrarMisPedidos() {
   }
   el.innerHTML = html;
   el.classList.add('visible');
+}
+
+// --- CATALOGO ---
+function renderCatalogo(filtro) {
+  const list = document.getElementById('catalogoList');
+  const entries = Object.entries(catalogoData).sort((a, b) => (parseInt(a[0]) || 99999) - (parseInt(b[0]) || 99999));
+  document.getElementById('catalogoCount').textContent = `(${entries.length} empleados)`;
+
+  let filtered = entries;
+  if (filtro) {
+    const f = filtro.toLowerCase();
+    filtered = entries.filter(([num, d]) => num.includes(f) || (d.nombre || '').toLowerCase().includes(f) || (d.rfc || '').toLowerCase().includes(f));
+  }
+
+  if (filtered.length === 0) { list.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:8px;">No se encontraron empleados</div>'; return; }
+
+  list.innerHTML = filtered.slice(0, 50).map(([num, d]) => `
+    <div class="cortesia-item">
+      <div>
+        <span class="cortesia-info"><strong>#${esc(num)}</strong> — ${esc(d.nombre || 'Sin nombre')}</span>
+        <div class="cortesia-dias">${esc(d.rfc || 'Sin RFC')}</div>
+      </div>
+      <button class="cortesia-remove" onclick="quitarEmpleado('${num}')">Quitar</button>
+    </div>`).join('');
+
+  if (filtered.length > 50) list.innerHTML += `<div style="color:var(--muted);font-size:0.8rem;padding:8px;text-align:center;">Mostrando 50 de ${filtered.length}. Usa el buscador.</div>`;
+}
+
+function buscarEmpleadoCat() {
+  renderCatalogo(document.getElementById('catBuscar').value.trim());
+}
+
+async function agregarEmpleado() {
+  const num = document.getElementById('catNumEmp').value.trim();
+  const nombre = document.getElementById('catNombre').value.trim();
+  const rfc = document.getElementById('catRFC').value.trim().toUpperCase();
+  if (!num || !nombre) { showToast('Escribe el numero y nombre'); return; }
+  if (!/^\d+$/.test(num)) { showToast('El numero debe ser solo digitos'); return; }
+
+  const numNorm = num.replace(/^0+/, '') || '0';
+  if (catalogoData[num] || catalogoData[numNorm]) {
+    if (!confirm(`El empleado #${num} ya existe. Quieres actualizarlo?`)) return;
+  }
+
+  await loadFromCloud();
+  catalogoData[numNorm] = { nombre, rfc };
+  await saveToCloud();
+
+  document.getElementById('catNumEmp').value = '';
+  document.getElementById('catNombre').value = '';
+  document.getElementById('catRFC').value = '';
+  renderCatalogo();
+  showToast(`Empleado #${num} agregado`);
+}
+
+async function quitarEmpleado(num) {
+  if (!confirm(`Quitar al empleado #${num} del catalogo?`)) return;
+  await loadFromCloud();
+  delete catalogoData[num];
+  const numNorm = num.replace(/^0+/, '') || '0';
+  delete catalogoData[numNorm];
+  await saveToCloud();
+  renderCatalogo(document.getElementById('catBuscar').value.trim());
+  showToast('Empleado eliminado');
 }
 
 // --- BUK EXPORT ---
