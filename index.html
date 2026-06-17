@@ -1656,7 +1656,7 @@ function archivarPedidos() {
   ordersData.forEach(o => {
     const key = getQuincenaKey(o.fecha);
     if (!historialData[key]) historialData[key] = {};
-    const emp = o.numEmpleado || '0';
+    const emp = (o.numEmpleado || '0').replace(/^0+/, '') || '0';
     if (!historialData[key][emp]) historialData[key][emp] = { nombre: o.nombre, comidas: 0, pedidos: [] };
     if (!historialData[key][emp].pedidos) historialData[key][emp].pedidos = [];
     historialData[key][emp].comidas += o.total || 0;
@@ -1912,12 +1912,11 @@ function mostrarMisPedidos() {
   const el = document.getElementById('misPedidos');
   if (!num || num.length < 1) { el.classList.remove('visible'); return; }
 
-  // Current orders for this employee
-  const misPedidos = ordersData.filter(o => o.numEmpleado === num);
-  // Historial for current quincena
+  const numNorm = num.replace(/^0+/, '') || '0';
+  const misPedidos = ordersData.filter(o => (o.numEmpleado || '').replace(/^0+/, '') === numNorm);
   const now = new Date();
   const qKey = getQuincenaKey(now.toISOString());
-  const hist = historialData[qKey]?.[num];
+  const hist = historialData[qKey]?.[num] || historialData[qKey]?.[numNorm];
 
   let totalComidas = 0;
   const dias = [];
@@ -1997,7 +1996,7 @@ function exportarBUK() {
   ordersData.forEach(o => {
     const f = new Date(o.fecha);
     if (f >= fechaDesde && f <= fechaHasta) {
-      const key = o.numEmpleado || '0';
+      const key = (o.numEmpleado || '0').replace(/^0+/, '') || '0';
       if (!conteo[key]) conteo[key] = { nombre: o.nombre, comidas: 0 };
       conteo[key].comidas += o.total || 0;
     }
@@ -2041,9 +2040,10 @@ function exportarBUK() {
   let sinRFC = [];
 
   sorted.forEach(([numEmp, data]) => {
-    let cat = catalogoData[numEmp];
+    const numNorm = numEmp.replace(/^0+/, '') || '0';
+    let cat = catalogoData[numEmp] || catalogoData[numNorm];
     if (!cat) {
-      const match = Object.entries(catalogoData).find(([k]) => k.replace(/\D/g,'') === numEmp);
+      const match = Object.entries(catalogoData).find(([k]) => k.replace(/\D/g,'').replace(/^0+/,'') === numNorm);
       if (match) cat = match[1];
     }
     const rfc = cat ? cat.rfc : '';
