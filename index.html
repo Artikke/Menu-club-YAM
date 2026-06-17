@@ -2057,11 +2057,8 @@ function exportarBUK() {
   const PRECIO = 56.71;
   const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-  // BUK Layout - limpio como Excel normal
-  let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"/></head><body>';
-
-  html += '<table>';
-  html += `<tr><td><b>Numero de Documento</b></td><td><b>Ficha/Col</b></td><td><b>Valor</b></td></tr>`;
+  // BUK Layout - CSV para Excel con cuadricula normal
+  let csv = 'Numero de Documento,Ficha/Col,Valor\n';
 
   const sorted = Object.entries(conteo).sort((a, b) => (parseInt(a[0]) || 99999) - (parseInt(b[0]) || 99999));
   let totalValor = 0;
@@ -2078,29 +2075,22 @@ function exportarBUK() {
     if (!rfc) sinRFC.push({ num: numEmp, nombre: data.nombre });
     const valor = (data.comidas * PRECIO).toFixed(2);
     totalValor += data.comidas * PRECIO;
-    html += `<tr><td>${esc(rfc || 'NO ENCONTRADO')}</td><td>${esc(numEmp)}</td><td>${valor}</td></tr>`;
+    csv += `${rfc || 'NO ENCONTRADO'},${numEmp},${valor}\n`;
   });
 
-  html += '</table>';
-
-  // Cortesias
-  html += '<br/><table>';
-  html += `<tr><td colspan="3">Cortesias - ${meses[mes - 1]} ${anio} (${desde}-${hasta})</td></tr>`;
-  html += `<tr><td><b>Nombre</b></td><td><b>Comidas</b></td><td><b>Valor (sin cobro)</b></td></tr>`;
+  csv += `\n\nCortesias - ${meses[mes - 1]} ${anio} (${desde}-${hasta})\n`;
+  csv += 'Nombre,Comidas,Valor (sin cobro)\n';
 
   cortesiasList.forEach(c => {
-    html += `<tr><td>${esc(c.nombre)}</td><td>${c.dias}</td><td>${(c.dias * PRECIO).toFixed(2)}</td></tr>`;
+    csv += `${c.nombre},${c.dias},${(c.dias * PRECIO).toFixed(2)}\n`;
   });
 
-  html += `<tr><td>TOTAL CORTESIAS</td><td>${totalCortesias}</td><td>${(totalCortesias * PRECIO).toFixed(2)}</td></tr>`;
-  html += '</table>';
+  csv += `TOTAL CORTESIAS,${totalCortesias},${(totalCortesias * PRECIO).toFixed(2)}\n`;
 
-  html += '</body></html>';
-
-  const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `BUK_Comedor_${meses[mes - 1]}${anio}_Q${bukQuincena}.xls`;
+  a.download = `BUK_Comedor_${meses[mes - 1]}${anio}_Q${bukQuincena}.csv`;
   a.click();
   cerrarBukModal();
 
