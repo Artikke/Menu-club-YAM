@@ -2061,7 +2061,7 @@ function exportarBUK() {
   let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"/></head><body>';
 
   html += '<table>';
-  html += `<tr><th>Numero de Documento</th><th>Ficha/Col</th><th>Valor</th></tr>`;
+  html += `<tr><td><b>Numero de Documento</b></td><td><b>Ficha/Col</b></td><td><b>Valor</b></td></tr>`;
 
   const sorted = Object.entries(conteo).sort((a, b) => (parseInt(a[0]) || 99999) - (parseInt(b[0]) || 99999));
   let totalValor = 0;
@@ -2086,7 +2086,7 @@ function exportarBUK() {
   // Cortesias
   html += '<br/><table>';
   html += `<tr><td colspan="3">Cortesias - ${meses[mes - 1]} ${anio} (${desde}-${hasta})</td></tr>`;
-  html += `<tr><th>Nombre</th><th>Comidas</th><th>Valor (sin cobro)</th></tr>`;
+  html += `<tr><td><b>Nombre</b></td><td><b>Comidas</b></td><td><b>Valor (sin cobro)</b></td></tr>`;
 
   cortesiasList.forEach(c => {
     html += `<tr><td>${esc(c.nombre)}</td><td>${c.dias}</td><td>${(c.dias * PRECIO).toFixed(2)}</td></tr>`;
