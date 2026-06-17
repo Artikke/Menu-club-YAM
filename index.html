@@ -2057,24 +2057,15 @@ function exportarBUK() {
   const PRECIO = 56.71;
   const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-  // BUK Layout - con estilo de tabla Excel
-  const bk = 'border:1px solid #bdc3c7;padding:6px 10px;';
-  const hd = 'border:1px solid #bdc3c7;padding:8px 10px;background:#1a5276;color:#fff;font-weight:bold;';
-  const lt = '#eaf2f8';
+  // BUK Layout - limpio como Excel normal
   let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"/></head><body>';
 
-  html += '<table style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:11pt;">';
-  html += `<tr><td colspan="3" style="border:1px solid #bdc3c7;padding:12px;background:#1a5276;color:#fff;font-weight:bold;font-size:13pt;text-align:center;">Reporte Comedor - ${meses[mes - 1]} ${anio} (${desde}-${hasta})</td></tr>`;
-  html += `<tr>`;
-  html += `<th style="${hd}">Numero de Documento</th>`;
-  html += `<th style="${hd}text-align:center;">Ficha/Col</th>`;
-  html += `<th style="${hd}text-align:right;">Valor</th>`;
-  html += `</tr>`;
+  html += '<table>';
+  html += `<tr><th>Numero de Documento</th><th>Ficha/Col</th><th>Valor</th></tr>`;
 
   const sorted = Object.entries(conteo).sort((a, b) => (parseInt(a[0]) || 99999) - (parseInt(b[0]) || 99999));
   let totalValor = 0;
   let sinRFC = [];
-  let rowIdx = 0;
 
   sorted.forEach(([numEmp, data]) => {
     const numNorm = numEmp.replace(/^0+/, '') || '0';
@@ -2087,44 +2078,21 @@ function exportarBUK() {
     if (!rfc) sinRFC.push({ num: numEmp, nombre: data.nombre });
     const valor = (data.comidas * PRECIO).toFixed(2);
     totalValor += data.comidas * PRECIO;
-    const bg = rowIdx % 2 === 0 ? '#fff' : lt;
-    html += `<tr>`;
-    html += `<td style="${bk}background:${bg};">${esc(rfc || 'NO ENCONTRADO')}</td>`;
-    html += `<td style="${bk}background:${bg};text-align:center;">${esc(numEmp)}</td>`;
-    html += `<td style="${bk}background:${bg};text-align:right;">${valor}</td>`;
-    html += `</tr>`;
-    rowIdx++;
+    html += `<tr><td>${esc(rfc || 'NO ENCONTRADO')}</td><td>${esc(numEmp)}</td><td>${valor}</td></tr>`;
   });
 
-  html += `<tr>`;
-  html += `<td colspan="2" style="${bk}background:#1a5276;color:#fff;font-weight:bold;">TOTAL</td>`;
-  html += `<td style="${bk}background:#1a5276;color:#fff;font-weight:bold;text-align:right;">${totalValor.toFixed(2)}</td>`;
-  html += `</tr>`;
   html += '</table>';
 
   // Cortesias
-  html += '<br/><table style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:11pt;">';
-  html += `<tr><td colspan="3" style="${hd}text-align:center;font-size:12pt;">Cortesias - ${meses[mes - 1]} ${anio} (${desde}-${hasta})</td></tr>`;
-  html += `<tr>`;
-  html += `<th style="${hd}">Nombre</th>`;
-  html += `<th style="${hd}text-align:center;">Comidas</th>`;
-  html += `<th style="${hd}text-align:right;">Valor (sin cobro)</th>`;
-  html += `</tr>`;
+  html += '<br/><table>';
+  html += `<tr><td colspan="3">Cortesias - ${meses[mes - 1]} ${anio} (${desde}-${hasta})</td></tr>`;
+  html += `<tr><th>Nombre</th><th>Comidas</th><th>Valor (sin cobro)</th></tr>`;
 
-  cortesiasList.forEach((c, ci) => {
-    const bg = ci % 2 === 0 ? '#fff' : lt;
-    html += `<tr>`;
-    html += `<td style="${bk}background:${bg};">${esc(c.nombre)}</td>`;
-    html += `<td style="${bk}background:${bg};text-align:center;">${c.dias}</td>`;
-    html += `<td style="${bk}background:${bg};text-align:right;">${(c.dias * PRECIO).toFixed(2)}</td>`;
-    html += `</tr>`;
+  cortesiasList.forEach(c => {
+    html += `<tr><td>${esc(c.nombre)}</td><td>${c.dias}</td><td>${(c.dias * PRECIO).toFixed(2)}</td></tr>`;
   });
 
-  html += `<tr>`;
-  html += `<td style="${bk}background:#1a5276;color:#fff;font-weight:bold;">TOTAL CORTESIAS</td>`;
-  html += `<td style="${bk}background:#1a5276;color:#fff;font-weight:bold;text-align:center;">${totalCortesias}</td>`;
-  html += `<td style="${bk}background:#1a5276;color:#fff;font-weight:bold;text-align:right;">${(totalCortesias * PRECIO).toFixed(2)}</td>`;
-  html += `</tr>`;
+  html += `<tr><td>TOTAL CORTESIAS</td><td>${totalCortesias}</td><td>${(totalCortesias * PRECIO).toFixed(2)}</td></tr>`;
   html += '</table>';
 
   html += '</body></html>';
