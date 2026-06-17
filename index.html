@@ -1899,11 +1899,10 @@ function exportarBUK() {
 
   // Sheet 1: BUK
   html += '<table style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:11pt;">';
-  html += `<tr><td colspan="4" style="${bdr}background:${hd};color:#fff;font-size:14pt;font-weight:bold;text-align:center;padding:12px;">Descuento Comedor - ${meses[mes]} ${anio} (${desde}-${hasta})</td></tr>`;
+  html += `<tr><td colspan="3" style="${bdr}background:${hd};color:#fff;font-size:14pt;font-weight:bold;text-align:center;padding:12px;">Descuento Comedor - ${meses[mes]} ${anio} (${desde}-${hasta})</td></tr>`;
   html += `<tr>`;
   html += `<th style="${bdr}background:${hd};color:#fff;font-weight:bold;">Numero de Documento</th>`;
-  html += `<th style="${bdr}background:${hd};color:#fff;font-weight:bold;">Ficha</th>`;
-  html += `<th style="${bdr}background:${hd};color:#fff;font-weight:bold;">Col</th>`;
+  html += `<th style="${bdr}background:${hd};color:#fff;font-weight:bold;">Ficha/Col</th>`;
   html += `<th style="${bdr}background:${hd};color:#fff;font-weight:bold;">Valor</th>`;
   html += `</tr>`;
 
@@ -1925,13 +1924,12 @@ function exportarBUK() {
     html += `<tr>`;
     html += `<td style="${bdr}background:${bg};">${rfc || 'NO ENCONTRADO'}</td>`;
     html += `<td style="${bdr}background:${bg};text-align:center;">${numEmp}</td>`;
-    html += `<td style="${bdr}background:${bg};text-align:center;">${numEmp}</td>`;
     html += `<td style="${bdr}background:${bg};text-align:right;">${valor}</td>`;
     html += `</tr>`;
   });
 
   html += `<tr>`;
-  html += `<td colspan="3" style="${bdr}background:${hd};color:#fff;font-weight:bold;text-align:right;">TOTAL</td>`;
+  html += `<td colspan="2" style="${bdr}background:${hd};color:#fff;font-weight:bold;text-align:right;">TOTAL</td>`;
   html += `<td style="${bdr}background:${hd};color:#fff;font-weight:bold;text-align:right;">${totalValor.toFixed(2)}</td>`;
   html += `</tr>`;
   html += '</table>';
