@@ -2060,7 +2060,7 @@ function exportarBUK() {
   // BUK Layout - limpio como Excel normal
   let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"/></head><body>';
 
-  html += '<table border="1" cellpadding="4">';
+  html += '<table>';
   html += `<tr><th>Numero de Documento</th><th>Ficha/Col</th><th>Valor</th></tr>`;
 
   const sorted = Object.entries(conteo).sort((a, b) => (parseInt(a[0]) || 99999) - (parseInt(b[0]) || 99999));
@@ -2084,7 +2084,7 @@ function exportarBUK() {
   html += '</table>';
 
   // Cortesias
-  html += '<br/><table border="1" cellpadding="4">';
+  html += '<br/><table>';
   html += `<tr><td colspan="3">Cortesias - ${meses[mes - 1]} ${anio} (${desde}-${hasta})</td></tr>`;
   html += `<tr><th>Nombre</th><th>Comidas</th><th>Valor (sin cobro)</th></tr>`;
 
