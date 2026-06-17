@@ -1800,8 +1800,27 @@ function showToast(m) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-// Auto-refresh orders in admin
-setInterval(async () => { if (adminVisible) { await loadFromCloud(); renderOrders(); } }, 30000);
+// Auto-refresh: admin cada 30s, empleados cada 2 min
+setInterval(async () => {
+  if (adminVisible) { await loadFromCloud(); renderOrders(); }
+}, 30000);
+setInterval(async () => {
+  if (!adminVisible) { await loadFromCloud(); renderMenu(); }
+}, 120000);
+
+// Admin timeout: cerrar admin despues de 15 min sin actividad
+let adminLastActivity = Date.now();
+function resetAdminTimer() { adminLastActivity = Date.now(); }
+document.addEventListener('click', () => { if (adminVisible) resetAdminTimer(); });
+document.addEventListener('keydown', () => { if (adminVisible) resetAdminTimer(); });
+setInterval(() => {
+  if (adminVisible && Date.now() - adminLastActivity > 15 * 60 * 1000) {
+    adminVisible = false;
+    adminAuth = false;
+    document.getElementById('adminPanel').classList.remove('visible');
+    showToast('Sesion admin cerrada por inactividad');
+  }
+}, 60000);
 
 // --- DAY NAME TO NUMBER MAP ---
 const DAY_MAP = { 'lunes':1, 'martes':2, 'miercoles':3, 'miércoles':3, 'jueves':4, 'viernes':5, 'sabado':6, 'sábado':6, 'domingo':0 };
