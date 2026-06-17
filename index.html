@@ -893,7 +893,6 @@ body { padding-bottom: 80px; }
       </button>
       <button class="btn-export" onclick="exportarCSV()">Exportar Excel</button>
       <button class="btn-export" onclick="mostrarExportBUK()" style="background:linear-gradient(135deg,#8e44ad,#3498db);">Exportar BUK</button>
-      <button class="btn-clear-orders" onclick="limpiarPedidos()">Limpiar</button>
     </div>
     <div id="ordersContainer"></div>
   </div>
@@ -1304,7 +1303,9 @@ async function guardarMenu() {
   if (!valid) { showToast('Llena los campos obligatorios'); return; }
 
   menuData = { mes, semana, anio, dias };
+  archivarPedidos();
   ordersData = [];
+  cortesiasData = [];
   quantities = {};
   selections = {};
 
