@@ -905,10 +905,10 @@ body { padding-bottom: 80px; }
     <div style="margin-bottom:14px;">
       <label style="font-weight:600;color:#1a5276;font-size:0.9rem;">Mes</label>
       <select id="bukMes" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-top:4px;font-size:0.95rem;">
-        <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option>
-        <option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option>
-        <option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option>
-        <option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+        <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+        <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+        <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+        <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
       </select>
     </div>
     <div style="margin-bottom:14px;">
@@ -1304,13 +1304,21 @@ async function guardarMenu() {
 
   menuData = { mes, semana, anio, dias };
   archivarPedidos();
+  const backupOrders = [...ordersData];
+  const backupCortesias = [...cortesiasData];
   ordersData = [];
   cortesiasData = [];
   quantities = {};
   selections = {};
 
   const saved = await saveToCloud();
-  showToast(saved ? 'Menu publicado' : 'Guardado local');
+  if (!saved) {
+    ordersData = backupOrders;
+    cortesiasData = backupCortesias;
+    showToast('Error al guardar, pedidos no se borraron');
+    return;
+  }
+  showToast('Menu publicado, pedidos archivados');
   renderMenu();
   renderOrders();
 }
@@ -1637,21 +1645,28 @@ function exportarCSV() {
 
 function getQuincenaKey(fecha) {
   const f = new Date(fecha);
-  const m = f.getMonth();
+  const m = f.getMonth() + 1;
   const a = f.getFullYear();
   const q = f.getDate() <= 15 ? 'Q1' : 'Q2';
   return `${a}-${m}-${q}`;
 }
 
 function archivarPedidos() {
+  if (ordersData.length === 0 && cortesiasData.length === 0) return;
   ordersData.forEach(o => {
     const key = getQuincenaKey(o.fecha);
     if (!historialData[key]) historialData[key] = {};
     const emp = o.numEmpleado || '0';
-    if (!historialData[key][emp]) historialData[key][emp] = { nombre: o.nombre, comidas: 0 };
+    if (!historialData[key][emp]) historialData[key][emp] = { nombre: o.nombre, comidas: 0, pedidos: [] };
+    if (!historialData[key][emp].pedidos) historialData[key][emp].pedidos = [];
     historialData[key][emp].comidas += o.total || 0;
+    historialData[key][emp].pedidos.push({
+      fecha: o.fecha,
+      detalle: o.detalle,
+      opciones: o.opciones,
+      total: o.total
+    });
   });
-  // Archivar cortesias tambien
   if (cortesiasData.length > 0) {
     const now = new Date();
     const key = getQuincenaKey(now.toISOString());
@@ -1667,9 +1682,17 @@ function archivarPedidos() {
 async function limpiarPedidos() {
   if (confirm('Borrar todos los pedidos? Se guardaran en el historial para el reporte BUK.')) {
     archivarPedidos();
+    const backupOrders = [...ordersData];
+    const backupCortesias = [...cortesiasData];
     ordersData = [];
     cortesiasData = [];
-    await saveToCloud();
+    const saved = await saveToCloud();
+    if (!saved) {
+      ordersData = backupOrders;
+      cortesiasData = backupCortesias;
+      showToast('Error al guardar, pedidos no se borraron');
+      return;
+    }
     renderOrders();
     showToast('Pedidos archivados y limpiados');
   }
@@ -1933,7 +1956,7 @@ let bukQuincena = 1;
 
 function mostrarExportBUK() {
   const now = new Date();
-  document.getElementById('bukMes').value = now.getMonth();
+  document.getElementById('bukMes').value = now.getMonth() + 1;
   document.getElementById('bukAnio').value = now.getFullYear();
   bukQuincena = now.getDate() <= 15 ? 1 : 2;
   selQuincena(bukQuincena);
@@ -1955,11 +1978,11 @@ function exportarBUK() {
   const mes = parseInt(document.getElementById('bukMes').value);
   const anio = parseInt(document.getElementById('bukAnio').value);
   const desde = bukQuincena === 1 ? 1 : 16;
-  const hasta = bukQuincena === 1 ? 15 : new Date(anio, mes + 1, 0).getDate();
+  const hasta = bukQuincena === 1 ? 15 : new Date(anio, mes, 0).getDate();
   const histKey = `${anio}-${mes}-Q${bukQuincena}`;
 
-  const fechaDesde = new Date(anio, mes, desde);
-  const fechaHasta = new Date(anio, mes, hasta, 23, 59, 59);
+  const fechaDesde = new Date(anio, mes - 1, desde);
+  const fechaHasta = new Date(anio, mes - 1, hasta, 23, 59, 59);
 
   // Start with archived historial for this period
   const conteo = {};
@@ -2065,7 +2088,7 @@ function exportarBUK() {
   const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `BUK_Comedor_${meses[mes]}${anio}_Q${bukQuincena}.xls`;
+  a.download = `BUK_Comedor_${meses[mes - 1]}${anio}_Q${bukQuincena}.xls`;
   a.click();
   cerrarBukModal();
 
