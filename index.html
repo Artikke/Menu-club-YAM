@@ -937,6 +937,8 @@ const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 const ADMIN_PIN = "2835";
 const MENU_URL = "https://artikke.github.io/Menu-club-YAM/";
 
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
 const DEFAULT_MENU = {
   mes: "Junio", semana: 1, anio: 2026,
   dias: [
@@ -1132,8 +1134,18 @@ async function enviarPedido() {
   const numEmp = document.getElementById('numEmpleado').value.trim();
   if (!nombre) { showToast('Escribe tu nombre'); document.getElementById('nombreInput').focus(); return; }
   if (!numEmp) { showToast('Escribe tu numero de empleado'); document.getElementById('numEmpleado').focus(); return; }
+  if (!/^\d+$/.test(numEmp)) { showToast('El numero de empleado debe ser solo digitos'); document.getElementById('numEmpleado').focus(); return; }
   const total = Object.values(quantities).reduce((a,b)=>a+b, 0);
   if (total === 0) return;
+
+  // Verificar duplicado
+  await loadFromCloud();
+  const numNormCheck = numEmp.replace(/^0+/, '') || '0';
+  const yaExiste = ordersData.find(o => (o.numEmpleado || '').replace(/^0+/, '') === numNormCheck);
+  if (yaExiste) {
+    if (!confirm(`Ya tienes un pedido esta semana (${yaExiste.total} comida${yaExiste.total!==1?'s':''}). Quieres reemplazarlo?`)) return;
+    ordersData = ordersData.filter(o => o !== yaExiste);
+  }
 
   const order = { nombre, numEmpleado: numEmp, fecha: new Date().toISOString(), total, detalle: {}, opciones: {} };
   menuData.dias.forEach((d, i) => {
@@ -1148,7 +1160,7 @@ async function enviarPedido() {
 
   // Guardar con retry para evitar race condition
   for (let attempt = 0; attempt < 3; attempt++) {
-    await loadFromCloud();
+    if (attempt > 0) await loadFromCloud();
     ordersData.push(order);
     await saveToCloud();
     // Verificar que el pedido se guardo
@@ -1423,8 +1435,8 @@ function renderOrders() {
 
   sorted.forEach(o => {
     html += '<tr>';
-    html += `<td style="font-weight:600;color:var(--primary)">${o.numEmpleado || '-'}</td>`;
-    html += `<td>${o.nombre}</td>`;
+    html += `<td style="font-weight:600;color:var(--primary)">${esc(o.numEmpleado || '-')}</td>`;
+    html += `<td>${esc(o.nombre)}</td>`;
     html += '<td>Empleado</td>';
     menuData.dias.forEach(d => {
       const qty = (o.detalle && o.detalle[d.dia]) || 0;
@@ -1435,7 +1447,7 @@ function renderOrders() {
         const isAlt = o.opciones[d.dia] !== d.platoFuerte;
         const color = isAlt ? '#e67e22' : '#27ae60';
         const icon = isAlt ? '&#9670;' : '&#9671;';
-        html += `<td>${icon} ${qty}<br><small style="color:${color};font-size:10px">${o.opciones[d.dia].substring(0,18)}</small></td>`;
+        html += `<td>${icon} ${qty}<br><small style="color:${color};font-size:10px">${esc(o.opciones[d.dia].substring(0,18))}</small></td>`;
       } else {
         html += `<td>${qty}</td>`;
       }
@@ -1447,7 +1459,7 @@ function renderOrders() {
   cortesiasData.forEach(c => {
     html += '<tr>';
     html += '<td style="color:#ccc">-</td>';
-    html += `<td>${c.nombre}</td>`;
+    html += `<td>${esc(c.nombre)}</td>`;
     html += '<td><span class="cortesia-badge">Cortesia</span></td>';
     let cTotal = 0;
     menuData.dias.forEach(d => {
@@ -1544,8 +1556,8 @@ function exportarCSV() {
     const fecha = dt.toLocaleDateString('es-MX', {day:'2-digit', month:'2-digit', year:'numeric'});
     const hora = dt.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
     html += '<tr>';
-    html += `<td style="${bdr}background:${bg};text-align:center;font-weight:600;">${o.numEmpleado || 'S/N'}</td>`;
-    html += `<td style="${bdr}background:${bg};text-align:left;">${o.nombre}</td>`;
+    html += `<td style="${bdr}background:${bg};text-align:center;font-weight:600;">${esc(o.numEmpleado || 'S/N')}</td>`;
+    html += `<td style="${bdr}background:${bg};text-align:left;">${esc(o.nombre)}</td>`;
     html += `<td style="${bdr}background:${bg};text-align:center;">Empleado</td>`;
     html += `<td style="${bdr}background:${bg};text-align:center;">${fecha}</td>`;
     html += `<td style="${bdr}background:${bg};text-align:center;">${hora}</td>`;
@@ -1571,7 +1583,7 @@ function exportarCSV() {
     const cortBg = '#fef9e7';
     html += '<tr>';
     html += `<td style="${bdr}background:${cortBg};text-align:center;color:#ccc;">-</td>`;
-    html += `<td style="${bdr}background:${cortBg};text-align:left;">${c.nombre}</td>`;
+    html += `<td style="${bdr}background:${cortBg};text-align:left;">${esc(c.nombre)}</td>`;
     html += `<td style="${bdr}background:#f39c12;color:#fff;font-weight:600;text-align:center;">Cortesia</td>`;
     html += `<td style="${bdr}background:${cortBg};text-align:center;">-</td>`;
     html += `<td style="${bdr}background:${cortBg};text-align:center;">-</td>`;
@@ -1721,8 +1733,8 @@ function renderCortesias() {
     return `
     <div class="cortesia-item">
       <div>
-        <span class="cortesia-info">${c.nombre}</span>
-        <div class="cortesia-dias">${dias || 'Sin dias'}</div>
+        <span class="cortesia-info">${esc(c.nombre)}</span>
+        <div class="cortesia-dias">${esc(dias) || 'Sin dias'}</div>
       </div>
       <button class="cortesia-remove" onclick="quitarCortesia(${i})">Quitar</button>
     </div>`;
@@ -1740,6 +1752,7 @@ async function agregarCortesia() {
   });
   if (Object.keys(dias).length === 0) { showToast('Selecciona al menos un dia'); return; }
 
+  await loadFromCloud();
   cortesiasData.push({ nombre, dias });
   await saveToCloud();
   document.getElementById('cortesiaNombre').value = '';
@@ -1750,6 +1763,7 @@ async function agregarCortesia() {
 }
 
 async function quitarCortesia(idx) {
+  await loadFromCloud();
   cortesiasData.splice(idx, 1);
   await saveToCloud();
   renderCortesias();
@@ -1837,7 +1851,8 @@ function buscarPedido() {
   const num = document.getElementById('cancelNumEmp').value.trim();
   if (!num) { showToast('Escribe tu numero de empleado'); return; }
 
-  const myOrders = ordersData.filter(o => o.numEmpleado === num);
+  const numNorm = num.replace(/^0+/, '') || '0';
+  const myOrders = ordersData.filter(o => (o.numEmpleado || '').replace(/^0+/, '') === numNorm);
   const container = document.getElementById('cancelResults');
 
   if (myOrders.length === 0) {
@@ -1845,10 +1860,8 @@ function buscarPedido() {
     return;
   }
 
-  // Mostrar el pedido mas reciente
   const order = myOrders[myOrders.length - 1];
-  const idx = ordersData.indexOf(order);
-  let html = `<div style="margin-bottom:8px;font-size:0.9rem;color:var(--muted);">Pedido de <strong>${order.nombre}</strong></div>`;
+  let html = `<div style="margin-bottom:8px;font-size:0.9rem;color:var(--muted);">Pedido de <strong>${esc(order.nombre)}</strong></div>`;
 
   const dias = Object.keys(order.detalle);
   if (dias.length === 0) {
@@ -1861,42 +1874,36 @@ function buscarPedido() {
     html += `
       <div class="cancel-day-item">
         <div class="day-info">
-          ${dia}
-          ${opcion ? `<small>${opcion}</small>` : ''}
+          ${esc(dia)}
+          ${opcion ? `<small>${esc(opcion)}</small>` : ''}
         </div>
-        <button class="cancel-day-btn" onclick="cancelarDia(${idx}, '${dia}')">Cancelar</button>
+        <button class="cancel-day-btn" onclick="cancelarDia('${order.nombre}', '${order.fecha}', '${dia}')">Cancelar</button>
       </div>`;
   });
 
   container.innerHTML = html;
 }
 
-async function cancelarDia(orderIdx, dia) {
+async function cancelarDia(orderName, orderFecha, dia) {
   if (!adminVisible && !isCancelOpen()) { showToast('Horario de cancelacion cerrado'); return; }
 
-  // Cancelar con retry para evitar race condition
   for (let attempt = 0; attempt < 3; attempt++) {
     await loadFromCloud();
 
-    const order = ordersData[orderIdx];
+    const order = ordersData.find(o => o.nombre === orderName && o.fecha === orderFecha);
     if (!order) { showToast('Pedido no encontrado, intenta de nuevo'); return; }
-
-    const orderName = order.nombre;
-    const orderFecha = order.fecha;
 
     delete order.detalle[dia];
     if (order.opciones) delete order.opciones[dia];
     order.total = Object.values(order.detalle).reduce((a,b) => a+b, 0);
 
     if (Object.keys(order.detalle).length === 0) {
-      ordersData.splice(orderIdx, 1);
+      ordersData.splice(ordersData.indexOf(order), 1);
     }
 
     await saveToCloud();
-    // Verificar que la cancelacion se guardo
     await loadFromCloud();
     const still = ordersData.find(o => o.nombre === orderName && o.fecha === orderFecha);
-    // Si se elimino completo y no existe, exito. Si existe, verificar que el dia ya no este
     if (!still || !still.detalle[dia]) break;
     if (attempt === 2) { showToast('Error al cancelar, intenta de nuevo'); return; }
   }
@@ -1916,17 +1923,12 @@ function mostrarMisPedidos() {
   const misPedidos = ordersData.filter(o => (o.numEmpleado || '').replace(/^0+/, '') === numNorm);
   const now = new Date();
   const qKey = getQuincenaKey(now.toISOString());
-  const hist = historialData[qKey]?.[num] || historialData[qKey]?.[numNorm];
 
-  let totalComidas = 0;
+  // Current week
   const dias = [];
-
-  // From historial (archived weeks)
-  if (hist) totalComidas += hist.comidas;
-
-  // From current orders
+  let semanaComidas = 0;
   misPedidos.forEach(o => {
-    totalComidas += o.total || 0;
+    semanaComidas += o.total || 0;
     Object.entries(o.detalle || {}).forEach(([dia, qty]) => {
       if (qty > 0) {
         const opcion = o.opciones?.[dia] || '';
@@ -1935,16 +1937,46 @@ function mostrarMisPedidos() {
     });
   });
 
-  if (totalComidas === 0) { el.classList.remove('visible'); return; }
+  // All quincenas from historial
+  const meses = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const quincenas = [];
+  let totalHistorico = 0;
+  Object.keys(historialData).sort().forEach(key => {
+    const h = historialData[key]?.[num] || historialData[key]?.[numNorm];
+    if (h && h.comidas > 0) {
+      totalHistorico += h.comidas;
+      const parts = key.match(/(\d+)-(\d+)-(Q\d)/);
+      if (parts) {
+        const label = `${meses[parseInt(parts[2])]} ${parts[1]} ${parts[3] === 'Q1' ? '(1-15)' : '(16-31)'}`;
+        quincenas.push({ label, comidas: h.comidas, current: key === qKey });
+      }
+    }
+  });
+
+  // Add current quincena archived data
+  const histQ = historialData[qKey]?.[num] || historialData[qKey]?.[numNorm];
+  const qArchivadas = histQ ? histQ.comidas : 0;
+  const qTotal = qArchivadas + semanaComidas;
+  const granTotal = totalHistorico + semanaComidas;
+
+  if (granTotal === 0 && semanaComidas === 0) { el.classList.remove('visible'); return; }
 
   const q = now.getDate() <= 15 ? '1-15' : '16-' + new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
-  let html = `<div class="mp-title">Tus pedidos esta quincena (${q}): ${totalComidas} comida${totalComidas > 1 ? 's' : ''}</div>`;
+  let html = `<div class="mp-title">Esta quincena (${q}): ${qTotal} comida${qTotal !== 1 ? 's' : ''}</div>`;
   if (dias.length > 0) {
     html += '<div style="margin-top:4px;font-size:0.8rem;color:#7f8c8d;">Esta semana:</div>';
-    dias.forEach(d => { html += `<div class="mp-dia">• ${d}</div>`; });
+    dias.forEach(d => { html += `<div class="mp-dia">• ${esc(d)}</div>`; });
   }
-  if (hist && hist.comidas > 0) {
-    html += `<div style="margin-top:4px;font-size:0.8rem;color:#7f8c8d;">Semanas anteriores: ${hist.comidas} comida${hist.comidas > 1 ? 's' : ''}</div>`;
+  if (qArchivadas > 0) {
+    html += `<div style="margin-top:2px;font-size:0.8rem;color:#7f8c8d;">Semanas anteriores: ${qArchivadas}</div>`;
+  }
+  if (quincenas.length > 0) {
+    html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #eee;font-weight:600;font-size:0.85rem;color:var(--primary);">Total acumulado: ${granTotal} comida${granTotal !== 1 ? 's' : ''}</div>`;
+    html += '<div style="margin-top:4px;font-size:0.78rem;color:#95a5a6;">';
+    quincenas.forEach(q => {
+      if (!q.current) html += `${q.label}: ${q.comidas} · `;
+    });
+    html += '</div>';
   }
   el.innerHTML = html;
   el.classList.add('visible');
@@ -2051,8 +2083,8 @@ function exportarBUK() {
     const valor = (data.comidas * PRECIO).toFixed(2);
     totalValor += data.comidas * PRECIO;
     html += `<tr>`;
-    html += `<td>${rfc || 'NO ENCONTRADO'}</td>`;
-    html += `<td>${numEmp}</td>`;
+    html += `<td>${esc(rfc || 'NO ENCONTRADO')}</td>`;
+    html += `<td>${esc(numEmp)}</td>`;
     html += `<td>${valor}</td>`;
     html += `</tr>`;
   });
@@ -2061,7 +2093,7 @@ function exportarBUK() {
 
   // Cortesias en hoja aparte
   html += '<br/><table style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:11pt;">';
-  html += `<tr><th colspan="3">Cortesias - ${meses[mes]} ${anio} (${desde}-${hasta})</th></tr>`;
+  html += `<tr><th colspan="3">Cortesias - ${meses[mes - 1]} ${anio} (${desde}-${hasta})</th></tr>`;
   html += `<tr>`;
   html += `<th>Nombre</th>`;
   html += `<th>Comidas</th>`;
@@ -2070,7 +2102,7 @@ function exportarBUK() {
 
   cortesiasList.forEach(c => {
     html += `<tr>`;
-    html += `<td>${c.nombre}</td>`;
+    html += `<td>${esc(c.nombre)}</td>`;
     html += `<td>${c.dias}</td>`;
     html += `<td>${(c.dias * PRECIO).toFixed(2)}</td>`;
     html += `</tr>`;
