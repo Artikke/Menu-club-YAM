@@ -1372,22 +1372,23 @@ async function guardarMenu() {
   if (!valid) { showToast('Llena los campos obligatorios'); return; }
 
   menuData = { mes, semana, anio, dias };
-  archivarPedidos();
-  const backupOrders = [...ordersData];
-  const backupCortesias = [...cortesiasData];
-  ordersData = [];
-  cortesiasData = [];
+
+  const borrarPedidos = ordersData.length > 0 && confirm(`Hay ${ordersData.length} pedido(s). ¿Es semana nueva y quieres borrar los pedidos?\n\nSi solo estas corrigiendo el menu, dale Cancelar.`);
+
+  if (borrarPedidos) {
+    archivarPedidos();
+    ordersData = [];
+    cortesiasData = [];
+  }
   quantities = {};
   selections = {};
 
   const saved = await saveToCloud();
   if (!saved) {
-    ordersData = backupOrders;
-    cortesiasData = backupCortesias;
-    showToast('Error al guardar, pedidos no se borraron');
+    showToast('Error al guardar');
     return;
   }
-  showToast('Menu publicado, pedidos archivados');
+  showToast(borrarPedidos ? 'Menu publicado, pedidos archivados' : 'Menu actualizado');
   renderMenu();
   renderOrders();
 }
