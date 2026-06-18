@@ -908,6 +908,7 @@ body { padding-bottom: 80px; }
       </button>
       <button class="btn-export" onclick="exportarCSV()">Exportar Excel</button>
       <button class="btn-export" onclick="mostrarExportBUK()" style="background:linear-gradient(135deg,#8e44ad,#3498db);">Exportar BUK</button>
+      <button class="btn-export" onclick="mostrarExportFactura()" style="background:linear-gradient(135deg,#27ae60,#2ecc71);">Conciliar Factura</button>
     </div>
     <div id="ordersContainer"></div>
   </div>
@@ -940,6 +941,37 @@ body { padding-bottom: 80px; }
     <div style="display:flex;gap:10px;">
       <button onclick="cerrarBukModal()" style="flex:1;padding:12px;border-radius:10px;border:1px solid #ddd;background:#fff;font-weight:600;cursor:pointer;">Cancelar</button>
       <button onclick="exportarBUK()" style="flex:1;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#8e44ad,#3498db);color:#fff;font-weight:700;cursor:pointer;">Descargar</button>
+    </div>
+  </div>
+</div>
+
+<!-- FACTURA MODAL -->
+<div id="facturaModalBg" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:30px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <h3 style="font-family:'Montserrat',sans-serif;color:#27ae60;margin-bottom:16px;text-align:center;">Conciliar Factura</h3>
+    <div style="margin-bottom:14px;">
+      <label style="font-weight:600;color:#1a5276;font-size:0.9rem;">Mes</label>
+      <select id="facturaMes" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-top:4px;font-size:0.95rem;">
+        <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+        <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+        <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+        <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+      </select>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-weight:600;color:#1a5276;font-size:0.9rem;">Anio</label>
+      <input type="number" id="facturaAnio" value="2026" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-top:4px;font-size:0.95rem;"/>
+    </div>
+    <div style="margin-bottom:20px;">
+      <label style="font-weight:600;color:#1a5276;font-size:0.9rem;">Quincena</label>
+      <div style="display:flex;gap:10px;margin-top:6px;">
+        <button id="facturaQ1" onclick="selQuincenaFactura(1)" class="buk-q-btn buk-q-active">1 - 15</button>
+        <button id="facturaQ2" onclick="selQuincenaFactura(2)" class="buk-q-btn">16 - 31</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="cerrarFacturaModal()" style="flex:1;padding:12px;border-radius:10px;border:1px solid #ddd;background:#fff;font-weight:600;cursor:pointer;">Cancelar</button>
+      <button onclick="exportarFactura()" style="flex:1;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#27ae60,#2ecc71);color:#fff;font-weight:700;cursor:pointer;">Descargar</button>
     </div>
   </div>
 </div>
@@ -2139,26 +2171,6 @@ function exportarBUK() {
     }
   });
 
-  // Cortesias: archived + current
-  let totalCortesias = 0;
-  const cortesiasList = [];
-  const cortesiasMap = {};
-  // From historial
-  if (historialData[histKey]?._cortesias) {
-    historialData[histKey]._cortesias.forEach(c => {
-      cortesiasMap[c.nombre] = (cortesiasMap[c.nombre] || 0) + c.comidas;
-    });
-  }
-  // Current cortesias
-  cortesiasData.forEach(c => {
-    const dias = c.dias ? Object.keys(c.dias).length : 0;
-    if (dias > 0) cortesiasMap[c.nombre] = (cortesiasMap[c.nombre] || 0) + dias;
-  });
-  Object.entries(cortesiasMap).forEach(([nombre, dias]) => {
-    totalCortesias += dias;
-    cortesiasList.push({ nombre, dias });
-  });
-
   const PRECIO = 56.71;
   const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
@@ -2183,15 +2195,6 @@ function exportarBUK() {
     csv += `${rfc || 'NO ENCONTRADO'},${numEmp},${valor}\n`;
   });
 
-  csv += `\n\nCortesias - ${meses[mes - 1]} ${anio} (${desde}-${hasta})\n`;
-  csv += 'Nombre,Comidas,Valor (sin cobro)\n';
-
-  cortesiasList.forEach(c => {
-    csv += `${c.nombre},${c.dias},${(c.dias * PRECIO).toFixed(2)}\n`;
-  });
-
-  csv += `TOTAL CORTESIAS,${totalCortesias},${(totalCortesias * PRECIO).toFixed(2)}\n`;
-
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -2204,6 +2207,176 @@ function exportarBUK() {
   } else {
     showToast('Reporte BUK descargado');
   }
+}
+
+let facturaQuincena = 1;
+
+function mostrarExportFactura() {
+  const now = new Date();
+  document.getElementById('facturaMes').value = now.getMonth() + 1;
+  document.getElementById('facturaAnio').value = now.getFullYear();
+  facturaQuincena = now.getDate() <= 15 ? 1 : 2;
+  selQuincenaFactura(facturaQuincena);
+  document.getElementById('facturaModalBg').style.display = 'flex';
+}
+
+function cerrarFacturaModal() {
+  document.getElementById('facturaModalBg').style.display = 'none';
+}
+
+function selQuincenaFactura(q) {
+  facturaQuincena = q;
+  document.getElementById('facturaQ1').className = 'buk-q-btn' + (q === 1 ? ' buk-q-active' : '');
+  document.getElementById('facturaQ2').className = 'buk-q-btn' + (q === 2 ? ' buk-q-active' : '');
+}
+
+function exportarFactura() {
+  const mes = parseInt(document.getElementById('facturaMes').value);
+  const anio = parseInt(document.getElementById('facturaAnio').value);
+  const desde = facturaQuincena === 1 ? 1 : 16;
+  const hasta = facturaQuincena === 1 ? 15 : new Date(anio, mes, 0).getDate();
+  const histKey = `${anio}-${mes}-Q${facturaQuincena}`;
+
+  const fechaDesde = new Date(anio, mes - 1, desde);
+  const fechaHasta = new Date(anio, mes - 1, hasta, 23, 59, 59);
+
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const PRECIO = 56.71;
+
+  const allDays = [];
+  for (let d = desde; d <= hasta; d++) {
+    const dt = new Date(anio, mes - 1, d);
+    const dow = dt.getDay();
+    if (dow >= 1 && dow <= 5) allDays.push(d);
+  }
+
+  const personas = {};
+
+  if (historialData[histKey]) {
+    Object.entries(historialData[histKey]).forEach(([emp, data]) => {
+      if (emp === '_cortesias') return;
+      if (!personas[emp]) personas[emp] = { nombre: data.nombre, dias: {} };
+      if (data.pedidos && data.pedidos.length > 0) {
+        data.pedidos.forEach(p => {
+          if (p.detalle) {
+            const orderDate = new Date(p.fecha);
+            const dayNames = ['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
+            Object.entries(p.detalle).forEach(([dia, qty]) => {
+              const targetDow = dayNames.indexOf(dia);
+              if (targetDow >= 0) {
+                const weekStart = new Date(orderDate);
+                weekStart.setDate(orderDate.getDate() - orderDate.getDay());
+                const targetDate = new Date(weekStart);
+                targetDate.setDate(weekStart.getDate() + targetDow);
+                if (targetDate.getDate() >= desde && targetDate.getDate() <= hasta) {
+                  personas[emp].dias[targetDate.getDate()] = (personas[emp].dias[targetDate.getDate()] || 0) + qty;
+                }
+              }
+            });
+          }
+        });
+      } else {
+        personas[emp].totalOnly = data.comidas;
+      }
+    });
+  }
+
+  ordersData.forEach(o => {
+    const f = new Date(o.fecha);
+    if (f >= fechaDesde && f <= fechaHasta) {
+      const emp = (o.numEmpleado || '0').replace(/^0+/, '') || '0';
+      if (!personas[emp]) personas[emp] = { nombre: o.nombre, dias: {} };
+      if (o.detalle) {
+        Object.keys(o.detalle).forEach(dia => {
+          const dayIdx = menuData.dias.findIndex(d => d.dia === dia);
+          if (dayIdx >= 0 && menuData.dias[dayIdx].fecha) {
+            const fd = new Date(menuData.dias[dayIdx].fecha);
+            personas[emp].dias[fd.getDate()] = (personas[emp].dias[fd.getDate()] || 0) + o.detalle[dia];
+          } else {
+            const dayNames = ['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
+            const targetDow = dayNames.indexOf(dia);
+            if (targetDow >= 0) {
+              const orderDate = new Date(o.fecha);
+              const weekStart = new Date(orderDate);
+              weekStart.setDate(orderDate.getDate() - orderDate.getDay());
+              const targetDate = new Date(weekStart);
+              targetDate.setDate(weekStart.getDate() + targetDow);
+              if (targetDate >= fechaDesde && targetDate <= fechaHasta) {
+                personas[emp].dias[targetDate.getDate()] = (personas[emp].dias[targetDate.getDate()] || 0) + o.detalle[dia];
+              }
+            }
+          }
+        });
+      }
+    }
+  });
+
+  // Add cortesias
+  const cortesiasMap = {};
+  if (historialData[histKey]?._cortesias) {
+    historialData[histKey]._cortesias.forEach(c => {
+      cortesiasMap[c.nombre] = (cortesiasMap[c.nombre] || 0) + c.comidas;
+    });
+  }
+  cortesiasData.forEach(c => {
+    const dias = c.dias ? Object.keys(c.dias).length : 0;
+    if (dias > 0) cortesiasMap[c.nombre] = (cortesiasMap[c.nombre] || 0) + dias;
+  });
+
+  const dayHeaders = allDays.map(d => {
+    const dt = new Date(anio, mes - 1, d);
+    const abr = ['dom','lun','mar','mie','jue','vie','sab'][dt.getDay()];
+    return `${abr} ${String(d).padStart(2,'0')}`;
+  });
+
+  let csv = `Reporte Conciliacion - ${meses[mes - 1]} ${anio} (${desde} al ${hasta})\n\n`;
+  csv += `No. Empleado,Nombre,${dayHeaders.join(',')},TOTAL\n`;
+
+  const sorted = Object.entries(personas).sort((a, b) => (parseInt(a[0]) || 99999) - (parseInt(b[0]) || 99999));
+  let granTotal = 0;
+  const dayTotals = {};
+  allDays.forEach(d => dayTotals[d] = 0);
+
+  sorted.forEach(([numEmp, data]) => {
+    let personTotal = 0;
+    const dayCols = allDays.map(d => {
+      const qty = data.dias[d] || 0;
+      personTotal += qty;
+      dayTotals[d] += qty;
+      return qty || '';
+    });
+    if (data.totalOnly && personTotal === 0) {
+      personTotal = data.totalOnly;
+      granTotal += data.totalOnly;
+    } else {
+      granTotal += personTotal;
+    }
+    csv += `${numEmp},"${data.nombre}",${dayCols.join(',')},${personTotal}\n`;
+  });
+
+  // Cortesias rows
+  if (Object.keys(cortesiasMap).length > 0) {
+    csv += `\nCORTESIAS\n`;
+    csv += `No. Empleado,Nombre,${dayHeaders.join(',')},TOTAL\n`;
+    Object.entries(cortesiasMap).forEach(([nombre, comidas]) => {
+      const emptyCols = allDays.map(() => '');
+      granTotal += comidas;
+      csv += `CORTESIA,"${nombre}",${emptyCols.join(',')},${comidas}\n`;
+    });
+  }
+
+  csv += `\n,TOTAL,${allDays.map(d => dayTotals[d] || '').join(',')},${granTotal}\n`;
+  csv += `\nPRECIO BASE,${PRECIO}\n`;
+  csv += `TOTAL COMIDAS,${granTotal}\n`;
+  csv += `TOTAL VALOR,"${(granTotal * PRECIO).toFixed(2)}"\n`;
+
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Conciliacion_${meses[mes - 1]}${anio}_Q${facturaQuincena}.csv`;
+  a.click();
+  cerrarFacturaModal();
+  showToast('Reporte de conciliacion descargado');
 }
 
 // Check every 60 seconds
