@@ -1181,9 +1181,12 @@ async function enviarPedido() {
   const numEmp = document.getElementById('numEmpleado').value.trim();
   if (!nombre) { showToast('Escribe tu nombre'); document.getElementById('nombreInput').focus(); return; }
   if (!numEmp) { showToast('Escribe tu numero de empleado'); document.getElementById('numEmpleado').focus(); return; }
-  if (!/^\d+$/.test(numEmp)) { showToast('El numero de empleado debe ser solo digitos'); document.getElementById('numEmpleado').focus(); return; }
+  if (!/^[a-zA-Z0-9]+$/.test(numEmp)) { showToast('El numero de empleado no es valido'); document.getElementById('numEmpleado').focus(); return; }
   const numNormVal = numEmp.replace(/^0+/, '') || '0';
-  const catMatch = catalogoData[numEmp] || catalogoData[numNormVal] || Object.values(catalogoData).length === 0;
+  const numUpper = numEmp.toUpperCase();
+  const catMatch = catalogoData[numEmp] || catalogoData[numNormVal] || catalogoData[numUpper] ||
+    Object.entries(catalogoData).find(([k]) => k.toUpperCase() === numUpper)?.[1] ||
+    Object.values(catalogoData).length === 0;
   if (!catMatch && !adminVisible) {
     showToast('Numero de empleado no encontrado. Contacta a RRHH.');
     document.getElementById('numEmpleado').focus();
@@ -1194,8 +1197,8 @@ async function enviarPedido() {
 
   // Verificar duplicado
   await loadFromCloud();
-  const numNormCheck = numEmp.replace(/^0+/, '') || '0';
-  const yaExiste = ordersData.find(o => (o.numEmpleado || '').replace(/^0+/, '') === numNormCheck);
+  const numNormCheck = numEmp.toUpperCase().replace(/^0+/, '') || '0';
+  const yaExiste = ordersData.find(o => (o.numEmpleado || '').toUpperCase().replace(/^0+/, '') === numNormCheck);
   if (yaExiste) {
     if (!confirm(`Ya tienes un pedido esta semana (${yaExiste.total} comida${yaExiste.total!==1?'s':''}). Quieres reemplazarlo?`)) return;
     ordersData = ordersData.filter(o => o !== yaExiste);
@@ -2090,7 +2093,7 @@ async function agregarEmpleado() {
   const nombre = document.getElementById('catNombre').value.trim();
   const rfc = document.getElementById('catRFC').value.trim().toUpperCase();
   if (!num || !nombre) { showToast('Escribe el numero y nombre'); return; }
-  if (!/^\d+$/.test(num)) { showToast('El numero debe ser solo digitos'); return; }
+  if (!/^[a-zA-Z0-9]+$/.test(num)) { showToast('El numero de empleado no es valido'); return; }
 
   const numNorm = num.replace(/^0+/, '') || '0';
   if (catalogoData[num] || catalogoData[numNorm]) {
