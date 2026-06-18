@@ -2318,7 +2318,11 @@ function exportarFactura() {
   });
 
   const mesAbr = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  const dayHeaders = allDays.map(d => `${mesAbr[mes - 1]} ${String(d).padStart(2,'0')}`);
+  const diaSem = ['dom','lun','mar','mie','jue','vie','sab'];
+  const dayHeaders = allDays.map(d => {
+    const dt = new Date(anio, mes - 1, d);
+    return `${diaSem[dt.getDay()]} ${String(d).padStart(2,'0')}/${String(mes).padStart(2,'0')}`;
+  });
   const fechaDesdeStr = `${String(desde).padStart(2,'0')}/${String(mes).padStart(2,'0')}/${anio}`;
   const fechaHastaStr = `${String(hasta).padStart(2,'0')}/${String(mes).padStart(2,'0')}/${anio}`;
 
