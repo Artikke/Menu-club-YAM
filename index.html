@@ -2323,19 +2323,19 @@ function exportarFactura() {
     if (dias > 0) cortesiasMap[c.nombre] = (cortesiasMap[c.nombre] || 0) + dias;
   });
 
-  const dayHeaders = allDays.map(d => {
-    const dt = new Date(anio, mes - 1, d);
-    const abr = ['dom','lun','mar','mie','jue','vie','sab'][dt.getDay()];
-    return `${abr} ${String(d).padStart(2,'0')}`;
-  });
-
-  let csv = `Reporte Conciliacion - ${meses[mes - 1]} ${anio} (${desde} al ${hasta})\n\n`;
-  csv += `No. Empleado,Nombre,${dayHeaders.join(',')},TOTAL\n`;
+  const mesAbr = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const dayHeaders = allDays.map(d => `${mesAbr[mes - 1]} ${String(d).padStart(2,'0')}`);
+  const fechaDesdeStr = `${String(desde).padStart(2,'0')}/${String(mes).padStart(2,'0')}/${anio}`;
+  const fechaHastaStr = `${String(hasta).padStart(2,'0')}/${String(mes).padStart(2,'0')}/${anio}`;
 
   const sorted = Object.entries(personas).sort((a, b) => (parseInt(a[0]) || 99999) - (parseInt(b[0]) || 99999));
   let granTotal = 0;
   const dayTotals = {};
   allDays.forEach(d => dayTotals[d] = 0);
+
+  let csv = `PROESA COMEDOR YAMA\n`;
+  csv += `Reporte del ${fechaDesdeStr} al ${fechaHastaStr}\n\n`;
+  csv += `No. Empleado,Nombre,${dayHeaders.join(',')},TOTAL\n`;
 
   sorted.forEach(([numEmp, data]) => {
     let personTotal = 0;
@@ -2354,21 +2354,17 @@ function exportarFactura() {
     csv += `${numEmp},"${data.nombre}",${dayCols.join(',')},${personTotal}\n`;
   });
 
-  // Cortesias rows
-  if (Object.keys(cortesiasMap).length > 0) {
-    csv += `\nCORTESIAS\n`;
-    csv += `No. Empleado,Nombre,${dayHeaders.join(',')},TOTAL\n`;
-    Object.entries(cortesiasMap).forEach(([nombre, comidas]) => {
-      const emptyCols = allDays.map(() => '');
-      granTotal += comidas;
-      csv += `CORTESIA,"${nombre}",${emptyCols.join(',')},${comidas}\n`;
-    });
-  }
+  Object.entries(cortesiasMap).forEach(([nombre, comidas]) => {
+    granTotal += comidas;
+    const emptyCols = allDays.map(() => '');
+    csv += `CORTESIA,"${nombre}",${emptyCols.join(',')},${comidas}\n`;
+  });
 
-  csv += `\n,TOTAL,${allDays.map(d => dayTotals[d] || '').join(',')},${granTotal}\n`;
-  csv += `\nPRECIO BASE,${PRECIO}\n`;
-  csv += `TOTAL COMIDAS,${granTotal}\n`;
-  csv += `TOTAL VALOR,"${(granTotal * PRECIO).toFixed(2)}"\n`;
+  csv += `\nTOTAL DE PEDIDOS,${granTotal}\n`;
+  csv += `PRECIO BASE,${PRECIO.toFixed(2)}\n`;
+  csv += `SUBTOTAL,${(granTotal * PRECIO).toFixed(2)}\n`;
+  csv += `IVA,${(granTotal * PRECIO * 0.16).toFixed(3)}\n`;
+  csv += `TOTAL CON IVA,${(granTotal * PRECIO * 1.16).toFixed(3)}\n`;
 
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
