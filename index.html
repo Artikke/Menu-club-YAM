@@ -2287,23 +2287,17 @@ function exportarFactura() {
       const emp = (o.numEmpleado || '0').replace(/^0+/, '') || '0';
       if (!personas[emp]) personas[emp] = { nombre: o.nombre, dias: {} };
       if (o.detalle) {
-        Object.keys(o.detalle).forEach(dia => {
-          const dayIdx = menuData.dias.findIndex(d => d.dia === dia);
-          if (dayIdx >= 0 && menuData.dias[dayIdx].fecha) {
-            const fd = new Date(menuData.dias[dayIdx].fecha);
-            personas[emp].dias[fd.getDate()] = (personas[emp].dias[fd.getDate()] || 0) + o.detalle[dia];
-          } else {
-            const dayNames = ['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
-            const targetDow = dayNames.indexOf(dia);
-            if (targetDow >= 0) {
-              const orderDate = new Date(o.fecha);
-              const weekStart = new Date(orderDate);
-              weekStart.setDate(orderDate.getDate() - orderDate.getDay());
-              const targetDate = new Date(weekStart);
-              targetDate.setDate(weekStart.getDate() + targetDow);
-              if (targetDate >= fechaDesde && targetDate <= fechaHasta) {
-                personas[emp].dias[targetDate.getDate()] = (personas[emp].dias[targetDate.getDate()] || 0) + o.detalle[dia];
-              }
+        const dayNames = ['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
+        Object.entries(o.detalle).forEach(([dia, qty]) => {
+          const targetDow = dayNames.indexOf(dia);
+          if (targetDow >= 0) {
+            const orderDate = new Date(o.fecha);
+            const weekStart = new Date(orderDate);
+            weekStart.setDate(orderDate.getDate() - orderDate.getDay());
+            const targetDate = new Date(weekStart);
+            targetDate.setDate(weekStart.getDate() + targetDow);
+            if (targetDate >= fechaDesde && targetDate <= fechaHasta) {
+              personas[emp].dias[targetDate.getDate()] = (personas[emp].dias[targetDate.getDate()] || 0) + qty;
             }
           }
         });
