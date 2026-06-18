@@ -1928,8 +1928,8 @@ function buscarPedido() {
   const num = document.getElementById('cancelNumEmp').value.trim();
   if (!num) { showToast('Escribe tu numero de empleado'); return; }
 
-  const numNorm = num.replace(/^0+/, '') || '0';
-  const myOrders = ordersData.filter(o => (o.numEmpleado || '').replace(/^0+/, '') === numNorm);
+  const numNorm = num.toUpperCase().replace(/^0+/, '') || '0';
+  const myOrders = ordersData.filter(o => (o.numEmpleado || '').toUpperCase().replace(/^0+/, '') === numNorm);
   const container = document.getElementById('cancelResults');
 
   if (myOrders.length === 0) {
@@ -1996,8 +1996,8 @@ function mostrarMisPedidos() {
   const el = document.getElementById('misPedidos');
   if (!num || num.length < 1) { el.classList.remove('visible'); return; }
 
-  const numNorm = num.replace(/^0+/, '') || '0';
-  const misPedidos = ordersData.filter(o => (o.numEmpleado || '').replace(/^0+/, '') === numNorm);
+  const numNorm = num.toUpperCase().replace(/^0+/, '') || '0';
+  const misPedidos = ordersData.filter(o => (o.numEmpleado || '').toUpperCase().replace(/^0+/, '') === numNorm);
   const now = new Date();
   const qKey = getQuincenaKey(now.toISOString());
 
