@@ -978,9 +978,7 @@ body { padding-bottom: 80px; }
 
 <script>
 // --- CONFIG ---
-const BIN_ID = "6a1088996877513b27b6bbed";
-const API_KEY = "$2a$10$r.b1s1t/N/QaaWvbwuJCCu5EzYjeVlj5kvPMUe0fJYyj9rPPwum/S";
-const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+const FB_URL = "https://menu-proesa-yama-default-rtdb.firebaseio.com";
 const ADMIN_PIN = "2835";
 const MENU_URL = "https://artikke.github.io/Menu-club-YAM/";
 
@@ -1015,12 +1013,12 @@ function setSyncStatus(s, m) {
 async function loadFromCloud() {
   setSyncStatus('loading', 'Cargando...');
   try {
-    const r = await fetch(BIN_URL+'/latest', { headers: { 'X-Master-Key': API_KEY } });
+    const r = await fetch(FB_URL + '/data.json');
     if (!r.ok) throw new Error(r.status);
-    const d = (await r.json()).record;
+    const d = await r.json();
     if (d?.menu?.dias) menuData = d.menu;
-    if (Array.isArray(d?.orders)) ordersData = d.orders;
-    if (Array.isArray(d?.cortesias)) cortesiasData = d.cortesias;
+    ordersData = Array.isArray(d?.orders) ? d.orders : d?.orders ? Object.values(d.orders) : [];
+    cortesiasData = Array.isArray(d?.cortesias) ? d.cortesias : d?.cortesias ? Object.values(d.cortesias) : [];
     if (d?.catalogo && typeof d.catalogo === 'object') catalogoData = d.catalogo;
     if (d?.historial && typeof d.historial === 'object') historialData = d.historial;
     setSyncStatus('ok', 'Sincronizado');
@@ -1031,9 +1029,9 @@ async function loadFromCloud() {
 async function saveToCloud() {
   setSyncStatus('loading', 'Guardando...');
   try {
-    const r = await fetch(BIN_URL, {
+    const r = await fetch(FB_URL + '/data.json', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ menu: menuData, orders: ordersData, cortesias: cortesiasData, catalogo: catalogoData, historial: historialData })
     });
     if (!r.ok) throw new Error(r.status);
