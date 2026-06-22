@@ -2335,31 +2335,17 @@ function exportarFactura() {
   const dayTotals = {};
   allDays.forEach(d => dayTotals[d] = 0);
 
-  const totalCols = allDays.length + 3;
-  const hdr = 'style="background:#4472C4;color:#fff;font-weight:bold;font-size:11px;padding:6px 8px;border:1px solid #3060a0;text-align:center;"';
-  const cel = 'style="font-size:11px;padding:4px 8px;border:1px solid #d0d0d0;text-align:center;"';
-  const celL = 'style="font-size:11px;padding:4px 8px;border:1px solid #d0d0d0;text-align:left;"';
-  const bld = 'style="font-size:11px;padding:4px 8px;font-weight:bold;"';
-
-  let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"/></head><body>';
-  html += `<table>`;
-  html += `<tr><td colspan="${totalCols}" style="font-size:22px;font-weight:bold;color:#1a5276;padding:8px 0 2px;font-family:Calibri,Arial;">PROESA COMEDOR YAMA</td></tr>`;
-  html += `<tr><td colspan="${totalCols}" style="font-size:11px;color:#333;padding:0 0 10px;font-family:Calibri,Arial;">Reporte del ${fechaDesdeStr} al ${fechaHastaStr}</td></tr>`;
-
-  html += '<tr>';
-  html += `<td ${hdr}>No. Empleado</td><td ${hdr}>Nombre</td>`;
-  dayHeaders.forEach(h => { html += `<td ${hdr}>${h}</td>`; });
-  html += `<td ${hdr}>TOTAL</td></tr>`;
+  let csv = `PROESA COMEDOR YAMA\n`;
+  csv += `Reporte del ${fechaDesdeStr} al ${fechaHastaStr}\n\n`;
+  csv += `No. Empleado,Nombre,${dayHeaders.join(',')},TOTAL\n`;
 
   sorted.forEach(([numEmp, data]) => {
     let personTotal = 0;
-    html += '<tr>';
-    html += `<td ${cel}>${numEmp}</td><td ${celL}>${esc(data.nombre)}</td>`;
-    allDays.forEach(d => {
+    const dayCols = allDays.map(d => {
       const qty = data.dias[d] || 0;
       personTotal += qty;
       dayTotals[d] += qty;
-      html += `<td ${cel}>${qty || ''}</td>`;
+      return qty || '';
     });
     if (data.totalOnly && personTotal === 0) {
       personTotal = data.totalOnly;
@@ -2367,29 +2353,25 @@ function exportarFactura() {
     } else {
       granTotal += personTotal;
     }
-    html += `<td ${cel}>${personTotal}</td></tr>`;
+    csv += `${numEmp},"${data.nombre}",${dayCols.join(',')},${personTotal}\n`;
   });
 
   Object.entries(cortesiasMap).forEach(([nombre, comidas]) => {
     granTotal += comidas;
-    html += '<tr>';
-    html += `<td ${cel}>CORTESIA</td><td ${celL}>${esc(nombre)}</td>`;
-    allDays.forEach(() => { html += `<td ${cel}></td>`; });
-    html += `<td ${cel}>${comidas}</td></tr>`;
+    const emptyCols = allDays.map(() => '');
+    csv += `CORTESIA,"${nombre}",${emptyCols.join(',')},${comidas}\n`;
   });
 
-  html += `<tr><td colspan="${totalCols}"></td></tr>`;
-  html += `<tr><td ${bld}>TOTAL DE PEDIDOS</td><td ${bld}>${granTotal}</td></tr>`;
-  html += `<tr><td ${bld}>PRECIO BASE</td><td ${bld}>${PRECIO.toFixed(2)}</td></tr>`;
-  html += `<tr><td ${bld}>SUBTOTAL</td><td ${bld}>${(granTotal * PRECIO).toFixed(2)}</td></tr>`;
-  html += `<tr><td ${bld}>IVA</td><td ${bld}>${(granTotal * PRECIO * 0.16).toFixed(3)}</td></tr>`;
-  html += `<tr><td ${bld}>TOTAL CON IVA</td><td ${bld}>${(granTotal * PRECIO * 1.16).toFixed(3)}</td></tr>`;
-  html += '</table></body></html>';
+  csv += `\nTOTAL DE PEDIDOS,${granTotal}\n`;
+  csv += `PRECIO BASE,${PRECIO.toFixed(2)}\n`;
+  csv += `SUBTOTAL,${(granTotal * PRECIO).toFixed(2)}\n`;
+  csv += `IVA,${(granTotal * PRECIO * 0.16).toFixed(3)}\n`;
+  csv += `TOTAL CON IVA,${(granTotal * PRECIO * 1.16).toFixed(3)}\n`;
 
-  const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `Conciliacion_${meses[mes - 1]}${anio}_Q${facturaQuincena}.xls`;
+  a.download = `Conciliacion_${meses[mes - 1]}${anio}_Q${facturaQuincena}.csv`;
   a.click();
   cerrarFacturaModal();
   showToast('Reporte de conciliacion descargado');
