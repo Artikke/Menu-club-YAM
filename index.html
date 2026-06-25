@@ -785,7 +785,7 @@ body { padding-bottom: 80px; }
   <input type="text" id="nombreInput" placeholder="Escribe tu nombre completo" />
   <div style="height:10px"></div>
   <label>No. de empleado</label>
-  <input type="text" id="numEmpleado" placeholder="Ej: 1234" inputmode="numeric" oninput="mostrarMisPedidos()" />
+  <input type="text" id="numEmpleado" placeholder="Ej: 1234" inputmode="numeric" oninput="mostrarMisPedidos(); autoFillNombre();" />
   <div id="misPedidos"></div>
 </div>
 
@@ -1006,6 +1006,29 @@ let quantities = {};
 let selections = {};
 let adminAuth = false;
 
+function findCatEntry(numEmp) {
+  if (!numEmp) return null;
+  const norm = numEmp.replace(/^0+/, '') || '0';
+  const upper = numEmp.toUpperCase();
+  return catalogoData[numEmp] || catalogoData[norm] || catalogoData[upper] ||
+    Object.entries(catalogoData).find(([k]) => k.toUpperCase() === upper)?.[1] || null;
+}
+
+function autoFillNombre() {
+  const numEmp = document.getElementById('numEmpleado').value.trim();
+  const nombreInput = document.getElementById('nombreInput');
+  const cat = findCatEntry(numEmp);
+  if (cat) {
+    nombreInput.value = cat.nombre;
+    nombreInput.readOnly = true;
+    nombreInput.style.background = '#e8f5e9';
+  } else {
+    if (nombreInput.readOnly) { nombreInput.value = ''; }
+    nombreInput.readOnly = false;
+    nombreInput.style.background = '';
+  }
+}
+
 // --- SYNC ---
 function setSyncStatus(s, m) {
   const el = document.getElementById('syncStatus');
@@ -1177,21 +1200,17 @@ function copiarResumen() {
 
 async function enviarPedido() {
   if (!isOrderingOpen() && !adminVisible) { showToast('Pedidos cerrados. Se abren a las 5:00 PM'); return; }
-  const nombre = document.getElementById('nombreInput').value.trim();
   const numEmp = document.getElementById('numEmpleado').value.trim();
-  if (!nombre) { showToast('Escribe tu nombre'); document.getElementById('nombreInput').focus(); return; }
   if (!numEmp) { showToast('Escribe tu numero de empleado'); document.getElementById('numEmpleado').focus(); return; }
   if (!/^[a-zA-Z0-9]+$/.test(numEmp)) { showToast('El numero de empleado no es valido'); document.getElementById('numEmpleado').focus(); return; }
-  const numNormVal = numEmp.replace(/^0+/, '') || '0';
-  const numUpper = numEmp.toUpperCase();
-  const catMatch = catalogoData[numEmp] || catalogoData[numNormVal] || catalogoData[numUpper] ||
-    Object.entries(catalogoData).find(([k]) => k.toUpperCase() === numUpper)?.[1] ||
-    Object.values(catalogoData).length === 0;
+  const catMatch = findCatEntry(numEmp);
   if (!catMatch && !adminVisible) {
     showToast('Numero de empleado no encontrado. Contacta a RRHH.');
     document.getElementById('numEmpleado').focus();
     return;
   }
+  const nombre = (catMatch ? catMatch.nombre : document.getElementById('nombreInput').value.trim());
+  if (!nombre) { showToast('Escribe tu nombre'); document.getElementById('nombreInput').focus(); return; }
   const total = Object.values(quantities).reduce((a,b)=>a+b, 0);
   if (total === 0) return;
 
@@ -2387,6 +2406,7 @@ function exportarFacturaXLSX() {
   const fechaHasta = new Date(anio, mes - 1, hasta, 23, 59, 59);
   const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const PRECIO = 56.71;
+  const COBRAR_CORTESIAS = false;
 
   const allDays = [];
   for (let d = desde; d <= hasta; d++) {
@@ -2398,7 +2418,8 @@ function exportarFacturaXLSX() {
   if (historialData[histKey]) {
     Object.entries(historialData[histKey]).forEach(([emp, data]) => {
       if (emp === '_cortesias') return;
-      if (!personas[emp]) personas[emp] = { nombre: data.nombre, dias: {} };
+      const catName = findCatEntry(emp);
+      if (!personas[emp]) personas[emp] = { nombre: catName ? catName.nombre : data.nombre, dias: {} };
       if (data.pedidos && data.pedidos.length > 0) {
         data.pedidos.forEach(p => {
           if (p.detalle) {
@@ -2428,7 +2449,8 @@ function exportarFacturaXLSX() {
     const f = new Date(o.fecha);
     if (f >= fechaDesde && f <= fechaHasta) {
       const emp = (o.numEmpleado || '0').replace(/^0+/, '') || '0';
-      if (!personas[emp]) personas[emp] = { nombre: o.nombre, dias: {} };
+      const catName = findCatEntry(emp);
+      if (!personas[emp]) personas[emp] = { nombre: catName ? catName.nombre : o.nombre, dias: {} };
       if (o.detalle) {
         const dayNames = ['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
         Object.entries(o.detalle).forEach(([dia, qty]) => {
@@ -2449,7 +2471,6 @@ function exportarFacturaXLSX() {
   });
 
   const cortesiasList = [];
-  const cortDayMap = {};
   if (historialData[histKey]?._cortesias) {
     historialData[histKey]._cortesias.forEach(c => {
       cortesiasList.push({ nombre: c.nombre, comidas: c.comidas, dias: {} });
@@ -2492,11 +2513,12 @@ function exportarFacturaXLSX() {
   rows.push([`Reporte del ${fechaDesdeStr} al ${fechaHastaStr}`]);
   rows.push([]);
 
-  const headerRow = ['No. Empleado', 'Nombre', ...dayHeaders, 'TOTAL'];
+  const headerRow = ['No. Empleado', 'Nombre', ...dayHeaders, 'TOTAL', 'IMPORTE A DESCONTAR'];
   rows.push(headerRow);
 
   const sorted = Object.entries(personas).sort((a, b) => (parseInt(a[0]) || 99999) - (parseInt(b[0]) || 99999));
   let granTotal = 0;
+  let granImporte = 0;
   const dayTotals = {};
   allDays.forEach(d => dayTotals[d] = 0);
 
@@ -2508,11 +2530,11 @@ function exportarFacturaXLSX() {
       dayTotals[d] += qty;
       return qty || null;
     });
-    if (data.totalOnly && personTotal === 0) {
-      personTotal = data.totalOnly;
-    }
+    if (data.totalOnly && personTotal === 0) personTotal = data.totalOnly;
+    const importe = personTotal * PRECIO;
     granTotal += personTotal;
-    rows.push([numEmp, data.nombre, ...dayCols, personTotal]);
+    granImporte += importe;
+    rows.push([numEmp, data.nombre, ...dayCols, personTotal, importe]);
   });
 
   let cortTotalComidas = 0;
@@ -2526,32 +2548,42 @@ function exportarFacturaXLSX() {
       return qty || null;
     });
     cortTotalComidas += c.comidas;
-    rows.push(['CORTESIA', c.nombre, ...dayCols, c.comidas]);
+    const cortImporte = COBRAR_CORTESIAS ? c.comidas * PRECIO : 0;
+    rows.push(['CORTESIA', c.nombre, ...dayCols, c.comidas, cortImporte]);
   });
 
   if (cortesiasList.length > 0) {
     const cortSumCols = allDays.map(d => cortDayTotals[d] || null);
-    rows.push(['TOTAL CORTESIAS', 'Cortesías', ...cortSumCols, cortTotalComidas]);
+    const cortTotalImporte = COBRAR_CORTESIAS ? cortTotalComidas * PRECIO : 0;
+    rows.push(['TOTAL CORTESIAS', 'Cortesías', ...cortSumCols, cortTotalComidas, cortTotalImporte]);
   }
 
   granTotal += cortTotalComidas;
+  if (COBRAR_CORTESIAS) granImporte += cortTotalComidas * PRECIO;
   allDays.forEach(d => dayTotals[d] += (cortDayTotals[d] || 0));
+
+  const totalGenDayCols = allDays.map(d => dayTotals[d] || null);
+  rows.push(['TOTAL GENERAL', '', ...totalGenDayCols, granTotal, granImporte]);
 
   rows.push([]);
   rows.push(['TOTAL DE PEDIDOS', granTotal]);
   rows.push(['PRECIO BASE', PRECIO]);
-  rows.push(['SUBTOTAL', granTotal * PRECIO]);
-  rows.push(['IVA', granTotal * PRECIO * 0.16]);
-  rows.push(['TOTAL CON IVA', granTotal * PRECIO * 1.16]);
+  rows.push(['SUBTOTAL', granImporte]);
+  rows.push(['IVA', granImporte * 0.16]);
+  rows.push(['TOTAL CON IVA', granImporte * 1.16]);
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
   const totalCols = headerRow.length;
   const headerRowIdx = 3;
   const dataStart = 4;
-  const dataEnd = dataStart + sorted.length + cortesiasList.length + (cortesiasList.length > 0 ? 1 : 0) - 1;
-  const cortTotalRowIdx = cortesiasList.length > 0 ? dataStart + sorted.length + cortesiasList.length : -1;
-  const summaryStart = dataEnd + 2;
+  const cortRows = cortesiasList.length;
+  const cortSummaryRows = cortRows > 0 ? 1 : 0;
+  const dataRowCount = sorted.length + cortRows + cortSummaryRows;
+  const totalGenRowIdx = dataStart + dataRowCount;
+  const dataEnd = totalGenRowIdx;
+  const cortTotalRowIdx = cortRows > 0 ? dataStart + sorted.length + cortRows : -1;
+  const summaryStart = totalGenRowIdx + 2;
 
   ws['!merges'] = [
     { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } },
@@ -2562,37 +2594,41 @@ function exportarFacturaXLSX() {
   const whiteFont = { color: { rgb: 'FFFFFF' }, bold: true, sz: 11 };
   const centerAlign = { horizontal: 'center', vertical: 'center' };
   const leftAlign = { horizontal: 'left', vertical: 'center' };
-  const numFmt = '#,##0.00';
+  const rightAlign = { horizontal: 'right', vertical: 'center' };
+  const intFmt = '#,##0';
+  const moneyFmt = '#,##0.00';
   const thinBorder = {
     top: { style: 'thin', color: { rgb: 'B0B0B0' } },
     bottom: { style: 'thin', color: { rgb: 'B0B0B0' } },
     left: { style: 'thin', color: { rgb: 'B0B0B0' } },
     right: { style: 'thin', color: { rgb: 'B0B0B0' } }
   };
+  const importeColIdx = totalCols - 1;
+  const totalColIdx = totalCols - 2;
 
   const titleCell = ws[XLSX.utils.encode_cell({ r: 0, c: 0 })];
-  if (titleCell) { titleCell.s = { font: { bold: true, sz: 14, color: { rgb: '1F4E78' } }, alignment: centerAlign }; }
+  if (titleCell) titleCell.s = { font: { bold: true, sz: 14, color: { rgb: '1F4E78' } }, alignment: centerAlign };
   const subtitleCell = ws[XLSX.utils.encode_cell({ r: 1, c: 0 })];
-  if (subtitleCell) { subtitleCell.s = { font: { bold: true, sz: 11, color: { rgb: '555555' } }, alignment: centerAlign }; }
+  if (subtitleCell) subtitleCell.s = { font: { bold: true, sz: 11, color: { rgb: '555555' } }, alignment: centerAlign };
 
   for (let c = 0; c < totalCols; c++) {
     const ref = XLSX.utils.encode_cell({ r: headerRowIdx, c });
-    if (ws[ref]) {
-      ws[ref].s = { fill: blueFill, font: whiteFont, alignment: centerAlign, border: thinBorder };
-    }
+    if (ws[ref]) ws[ref].s = { fill: blueFill, font: whiteFont, alignment: centerAlign, border: thinBorder };
   }
 
   for (let r = dataStart; r <= dataEnd; r++) {
     for (let c = 0; c < totalCols; c++) {
       const ref = XLSX.utils.encode_cell({ r, c });
       if (!ws[ref]) ws[ref] = { t: 's', v: '' };
-      const isNumCol = c >= 2;
+      const isMoney = c === importeColIdx;
+      const isCount = c >= 2 && c <= totalColIdx;
       ws[ref].s = {
         border: thinBorder,
-        alignment: c <= 1 ? leftAlign : centerAlign,
-        ...(isNumCol && ws[ref].t === 'n' ? { numFmt } : {})
+        alignment: c <= 1 ? leftAlign : isMoney ? rightAlign : centerAlign
       };
-      if (isNumCol && typeof ws[ref].v === 'number') ws[ref].z = numFmt;
+      if (ws[ref].t === 'n') {
+        ws[ref].z = isMoney ? moneyFmt : intFmt;
+      }
     }
   }
 
@@ -2601,15 +2637,25 @@ function exportarFacturaXLSX() {
     for (let c = 0; c < totalCols; c++) {
       const ref = XLSX.utils.encode_cell({ r: cortTotalRowIdx, c });
       if (!ws[ref]) ws[ref] = { t: 's', v: '' };
+      const isMoney = c === importeColIdx;
       ws[ref].s = {
-        fill: cortBg,
-        font: { bold: true },
-        border: thinBorder,
-        alignment: c <= 1 ? leftAlign : centerAlign,
-        ...(c >= 2 && ws[ref].t === 'n' ? { numFmt } : {})
+        fill: cortBg, font: { bold: true }, border: thinBorder,
+        alignment: c <= 1 ? leftAlign : isMoney ? rightAlign : centerAlign
       };
-      if (c >= 2 && typeof ws[ref].v === 'number') ws[ref].z = numFmt;
+      if (ws[ref].t === 'n') ws[ref].z = isMoney ? moneyFmt : intFmt;
     }
+  }
+
+  const totalGenBg = { fgColor: { rgb: 'E2EFDA' } };
+  for (let c = 0; c < totalCols; c++) {
+    const ref = XLSX.utils.encode_cell({ r: totalGenRowIdx, c });
+    if (!ws[ref]) ws[ref] = { t: 's', v: '' };
+    const isMoney = c === importeColIdx;
+    ws[ref].s = {
+      fill: totalGenBg, font: { bold: true, sz: 11 }, border: thinBorder,
+      alignment: c <= 1 ? leftAlign : isMoney ? rightAlign : centerAlign
+    };
+    if (ws[ref].t === 'n') ws[ref].z = isMoney ? moneyFmt : intFmt;
   }
 
   for (let i = 0; i < 5; i++) {
@@ -2617,15 +2663,16 @@ function exportarFacturaXLSX() {
     for (let c = 0; c < 2; c++) {
       const ref = XLSX.utils.encode_cell({ r, c });
       if (ws[ref]) {
-        ws[ref].s = { font: { bold: c === 0 }, alignment: c === 0 ? leftAlign : { horizontal: 'right' } };
-        if (c === 1 && typeof ws[ref].v === 'number') ws[ref].z = numFmt;
+        ws[ref].s = { font: { bold: c === 0 }, alignment: c === 0 ? leftAlign : rightAlign };
+        if (c === 1 && ws[ref].t === 'n') ws[ref].z = i === 0 ? intFmt : moneyFmt;
       }
     }
   }
 
-  const colWidths = [{ wch: 16 }, { wch: 38 }];
+  const colWidths = [{ wch: 18 }, { wch: 38 }];
   for (let i = 0; i < allDays.length; i++) colWidths.push({ wch: 12 });
   colWidths.push({ wch: 10 });
+  colWidths.push({ wch: 22 });
   ws['!cols'] = colWidths;
 
   ws['!autofilter'] = { ref: `A${headerRowIdx + 1}:${XLSX.utils.encode_col(totalCols - 1)}${dataEnd + 1}` };
