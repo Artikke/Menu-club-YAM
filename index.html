@@ -2259,31 +2259,31 @@ function exportarFactura() {
   const desde = facturaQuincena === 1 ? 1 : 16;
   const hasta = facturaQuincena === 1 ? 15 : new Date(anio, mes, 0).getDate();
   const histKey = `${anio}-${mes}-Q${facturaQuincena}`;
-
   const fechaDesde = new Date(anio, mes - 1, desde);
   const fechaHasta = new Date(anio, mes - 1, hasta, 23, 59, 59);
-
   const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const PRECIO = 56.71;
+
+  const VALOR_DESCUENTO_COLABORADOR = 56.71;
+  const PRECIO_BASE_PROVEEDOR = 103.45;
+  const IVA_RATE = 0.16;
 
   const allDays = [];
   for (let d = desde; d <= hasta; d++) {
     const dt = new Date(anio, mes - 1, d);
-    const dow = dt.getDay();
-    if (dow >= 1 && dow <= 5) allDays.push(d);
+    if (dt.getDay() >= 1 && dt.getDay() <= 5) allDays.push(d);
   }
 
   const personas = {};
-
   if (historialData[histKey]) {
     Object.entries(historialData[histKey]).forEach(([emp, data]) => {
       if (emp === '_cortesias') return;
-      if (!personas[emp]) personas[emp] = { nombre: data.nombre, dias: {} };
+      const catName = findCatEntry(emp);
+      if (!personas[emp]) personas[emp] = { nombre: catName ? catName.nombre : data.nombre, dias: {} };
       if (data.pedidos && data.pedidos.length > 0) {
         data.pedidos.forEach(p => {
           if (p.detalle) {
-            const orderDate = new Date(p.fecha);
             const dayNames = ['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
+            const orderDate = new Date(p.fecha);
             Object.entries(p.detalle).forEach(([dia, qty]) => {
               const targetDow = dayNames.indexOf(dia);
               if (targetDow >= 0) {
@@ -2308,7 +2308,8 @@ function exportarFactura() {
     const f = new Date(o.fecha);
     if (f >= fechaDesde && f <= fechaHasta) {
       const emp = (o.numEmpleado || '0').replace(/^0+/, '') || '0';
-      if (!personas[emp]) personas[emp] = { nombre: o.nombre, dias: {} };
+      const catName = findCatEntry(emp);
+      if (!personas[emp]) personas[emp] = { nombre: catName ? catName.nombre : o.nombre, dias: {} };
       if (o.detalle) {
         const dayNames = ['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
         Object.entries(o.detalle).forEach(([dia, qty]) => {
@@ -2328,7 +2329,6 @@ function exportarFactura() {
     }
   });
 
-  // Add cortesias
   const cortesiasMap = {};
   if (historialData[histKey]?._cortesias) {
     historialData[histKey]._cortesias.forEach(c => {
@@ -2340,7 +2340,6 @@ function exportarFactura() {
     if (dias > 0) cortesiasMap[c.nombre] = (cortesiasMap[c.nombre] || 0) + dias;
   });
 
-  const mesAbr = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const diaSem = ['dom','lun','mar','mie','jue','vie','sab'];
   const dayHeaders = allDays.map(d => {
     const dt = new Date(anio, mes - 1, d);
@@ -2350,42 +2349,49 @@ function exportarFactura() {
   const fechaHastaStr = `${String(hasta).padStart(2,'0')}/${String(mes).padStart(2,'0')}/${anio}`;
 
   const sorted = Object.entries(personas).sort((a, b) => (parseInt(a[0]) || 99999) - (parseInt(b[0]) || 99999));
-  let granTotal = 0;
-  const dayTotals = {};
-  allDays.forEach(d => dayTotals[d] = 0);
+  let totalColaboradores = 0;
+  let totalDescuentos = 0;
+  let cortTotalComidas = 0;
 
   let csv = `PROESA COMEDOR YAMA\n`;
   csv += `Reporte del ${fechaDesdeStr} al ${fechaHastaStr}\n\n`;
-  csv += `No. Empleado,Nombre,${dayHeaders.join(',')},TOTAL\n`;
+  csv += `No. Empleado,Nombre,${dayHeaders.join(',')},TOTAL,TOTAL DESCUENTOS\n`;
 
   sorted.forEach(([numEmp, data]) => {
     let personTotal = 0;
     const dayCols = allDays.map(d => {
       const qty = data.dias[d] || 0;
       personTotal += qty;
-      dayTotals[d] += qty;
       return qty || '';
     });
-    if (data.totalOnly && personTotal === 0) {
-      personTotal = data.totalOnly;
-      granTotal += data.totalOnly;
-    } else {
-      granTotal += personTotal;
-    }
-    csv += `${numEmp},"${data.nombre}",${dayCols.join(',')},${personTotal}\n`;
+    if (data.totalOnly && personTotal === 0) personTotal = data.totalOnly;
+    const descuento = personTotal * VALOR_DESCUENTO_COLABORADOR;
+    totalColaboradores += personTotal;
+    totalDescuentos += descuento;
+    csv += `${numEmp},"${data.nombre}",${dayCols.join(',')},${personTotal},${descuento.toFixed(2)}\n`;
   });
 
   Object.entries(cortesiasMap).forEach(([nombre, comidas]) => {
-    granTotal += comidas;
+    cortTotalComidas += comidas;
     const emptyCols = allDays.map(() => '');
-    csv += `CORTESIA,"${nombre}",${emptyCols.join(',')},${comidas}\n`;
+    csv += `CORTESIA,"${nombre}",${emptyCols.join(',')},${comidas},0.00\n`;
   });
 
-  csv += `\nTOTAL DE PEDIDOS,${granTotal}\n`;
-  csv += `PRECIO BASE,${PRECIO.toFixed(2)}\n`;
-  csv += `SUBTOTAL,${(granTotal * PRECIO).toFixed(2)}\n`;
-  csv += `IVA,${(granTotal * PRECIO * 0.16).toFixed(3)}\n`;
-  csv += `TOTAL CON IVA,${(granTotal * PRECIO * 1.16).toFixed(3)}\n`;
+  if (Object.keys(cortesiasMap).length > 0) {
+    const emptyCols = allDays.map(() => '');
+    csv += `TOTAL CORTESIAS,Cortesías,${emptyCols.join(',')},${cortTotalComidas},0.00\n`;
+  }
+
+  const granTotalPedidos = totalColaboradores + cortTotalComidas;
+  const subtotal = granTotalPedidos * PRECIO_BASE_PROVEEDOR;
+  const iva = subtotal * IVA_RATE;
+  const totalConIva = subtotal + iva;
+
+  csv += `\nTOTAL DE PEDIDOS,${granTotalPedidos}\n`;
+  csv += `PRECIO BASE PROVEEDOR,${PRECIO_BASE_PROVEEDOR.toFixed(2)}\n`;
+  csv += `SUBTOTAL,${subtotal.toFixed(2)}\n`;
+  csv += `IVA (16%),${iva.toFixed(2)}\n`;
+  csv += `TOTAL CON IVA,${totalConIva.toFixed(2)}\n`;
 
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
@@ -2405,8 +2411,11 @@ function exportarFacturaXLSX() {
   const fechaDesde = new Date(anio, mes - 1, desde);
   const fechaHasta = new Date(anio, mes - 1, hasta, 23, 59, 59);
   const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const PRECIO = 56.71;
-  const COBRAR_CORTESIAS = false;
+
+  const VALOR_DESCUENTO_COLABORADOR = 56.71;
+  const PRECIO_BASE_PROVEEDOR = 103.45;
+  const IVA_RATE = 0.16;
+  const PRECIO_CON_IVA_PROVEEDOR = 120.00;
 
   const allDays = [];
   for (let d = desde; d <= hasta; d++) {
@@ -2513,12 +2522,12 @@ function exportarFacturaXLSX() {
   rows.push([`Reporte del ${fechaDesdeStr} al ${fechaHastaStr}`]);
   rows.push([]);
 
-  const headerRow = ['No. Empleado', 'Nombre', ...dayHeaders, 'TOTAL', 'IMPORTE A DESCONTAR'];
+  const headerRow = ['No. Empleado', 'Nombre', ...dayHeaders, 'TOTAL', 'TOTAL DESCUENTOS'];
   rows.push(headerRow);
 
   const sorted = Object.entries(personas).sort((a, b) => (parseInt(a[0]) || 99999) - (parseInt(b[0]) || 99999));
-  let granTotal = 0;
-  let granImporte = 0;
+  let totalColaboradores = 0;
+  let totalDescuentos = 0;
   const dayTotals = {};
   allDays.forEach(d => dayTotals[d] = 0);
 
@@ -2531,10 +2540,10 @@ function exportarFacturaXLSX() {
       return qty || null;
     });
     if (data.totalOnly && personTotal === 0) personTotal = data.totalOnly;
-    const importe = personTotal * PRECIO;
-    granTotal += personTotal;
-    granImporte += importe;
-    rows.push([numEmp, data.nombre, ...dayCols, personTotal, importe]);
+    const descuento = personTotal * VALOR_DESCUENTO_COLABORADOR;
+    totalColaboradores += personTotal;
+    totalDescuentos += descuento;
+    rows.push([numEmp, data.nombre, ...dayCols, personTotal, descuento]);
   });
 
   let cortTotalComidas = 0;
@@ -2548,29 +2557,30 @@ function exportarFacturaXLSX() {
       return qty || null;
     });
     cortTotalComidas += c.comidas;
-    const cortImporte = COBRAR_CORTESIAS ? c.comidas * PRECIO : 0;
-    rows.push(['CORTESIA', c.nombre, ...dayCols, c.comidas, cortImporte]);
+    rows.push(['CORTESIA', c.nombre, ...dayCols, c.comidas, 0]);
   });
 
   if (cortesiasList.length > 0) {
     const cortSumCols = allDays.map(d => cortDayTotals[d] || null);
-    const cortTotalImporte = COBRAR_CORTESIAS ? cortTotalComidas * PRECIO : 0;
-    rows.push(['TOTAL CORTESIAS', 'Cortesías', ...cortSumCols, cortTotalComidas, cortTotalImporte]);
+    rows.push(['TOTAL CORTESIAS', 'Cortesías', ...cortSumCols, cortTotalComidas, 0]);
   }
 
-  granTotal += cortTotalComidas;
-  if (COBRAR_CORTESIAS) granImporte += cortTotalComidas * PRECIO;
+  const granTotalPedidos = totalColaboradores + cortTotalComidas;
   allDays.forEach(d => dayTotals[d] += (cortDayTotals[d] || 0));
 
   const totalGenDayCols = allDays.map(d => dayTotals[d] || null);
-  rows.push(['TOTAL GENERAL', '', ...totalGenDayCols, granTotal, granImporte]);
+  rows.push(['TOTAL PEDIDOS', '', ...totalGenDayCols, granTotalPedidos, totalDescuentos]);
+
+  const subtotalProveedor = granTotalPedidos * PRECIO_BASE_PROVEEDOR;
+  const ivaProveedor = subtotalProveedor * IVA_RATE;
+  const totalConIva = subtotalProveedor + ivaProveedor;
 
   rows.push([]);
-  rows.push(['TOTAL DE PEDIDOS', granTotal]);
-  rows.push(['PRECIO BASE', PRECIO]);
-  rows.push(['SUBTOTAL', granImporte]);
-  rows.push(['IVA', granImporte * 0.16]);
-  rows.push(['TOTAL CON IVA', granImporte * 1.16]);
+  rows.push(['TOTAL DE PEDIDOS', granTotalPedidos]);
+  rows.push(['PRECIO BASE PROVEEDOR', PRECIO_BASE_PROVEEDOR]);
+  rows.push(['SUBTOTAL', subtotalProveedor]);
+  rows.push(['IVA (16%)', ivaProveedor]);
+  rows.push(['TOTAL CON IVA', totalConIva]);
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
