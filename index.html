@@ -1066,6 +1066,18 @@ async function saveToCloud() {
 }
 
 // --- RENDER ---
+const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function getDisplayMonth(fechaNum, menu) {
+  if (!menu.dias || menu.dias.length < 2) return menu.mes;
+  const firstDate = menu.dias[0].fecha;
+  if (fechaNum < firstDate) {
+    const idx = MONTH_NAMES.indexOf(menu.mes);
+    return idx >= 0 && idx < 11 ? MONTH_NAMES[idx + 1] : menu.mes;
+  }
+  return menu.mes;
+}
+
 function renderMenu() {
   document.getElementById('menuInfo').innerHTML = `
     <span class="badge">Mes: ${menuData.mes}</span>
@@ -1079,7 +1091,7 @@ function renderMenu() {
   menuData.dias.forEach((d, i) => {
     quantities[i] = quantities[i] || 0;
     if (!selections[i]) selections[i] = 'principal';
-    const hasAlt = d.platoAlternativo && d.platoAlternativo.trim();
+    const hasAlt = d.platoAlternativo && d.platoAlternativo.trim().replace(/-/g, '').length > 0;
 
     const card = document.createElement('div');
     const passed = !adminVisible && isDayPassed(d.dia);
@@ -1108,7 +1120,7 @@ function renderMenu() {
     card.innerHTML = `
       <div class="day-header">
         <h2>${d.dia}</h2>
-        <div class="date">${d.fecha} de ${menuData.mes}</div>
+        <div class="date">${d.fecha} de ${getDisplayMonth(d.fecha, menuData)}</div>
       </div>
       <div class="meal-section">
         <div class="meal-type">Entrada</div>
@@ -1179,7 +1191,7 @@ function buildResumen() {
 
   menuData.dias.forEach((d, i) => {
     if (quantities[i] > 0) {
-      const hasAlt = d.platoAlternativo && d.platoAlternativo.trim();
+      const hasAlt = d.platoAlternativo && d.platoAlternativo.trim().replace(/-/g, '').length > 0;
       const plato = hasAlt ? (selections[i]==='alternativa' ? d.platoAlternativo + ' (Alt)' : d.platoFuerte) : d.platoFuerte;
       lines.push(`${d.dia} ${d.fecha}: ${quantities[i]} comida${quantities[i]!==1?'s':''}`);
       lines.push(`  Entrada: ${d.entrada}`);
@@ -1227,7 +1239,7 @@ async function enviarPedido() {
   menuData.dias.forEach((d, i) => {
     if (quantities[i] > 0) {
       order.detalle[d.dia] = quantities[i];
-      const hasAlt = d.platoAlternativo && d.platoAlternativo.trim();
+      const hasAlt = d.platoAlternativo && d.platoAlternativo.trim().replace(/-/g, '').length > 0;
       if (hasAlt) {
         order.opciones[d.dia] = selections[i]==='alternativa' ? d.platoAlternativo : d.platoFuerte;
       }
