@@ -2699,8 +2699,55 @@ function exportarFacturaXLSX() {
 // Check every 60 seconds
 setInterval(checkOrderLock, 60000);
 
+function getISOWeek(d) {
+  const date = new Date(d.getTime());
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+  const week1 = new Date(date.getFullYear(), 0, 4);
+  return { year: date.getFullYear(), week: Math.round(((date - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7) + 1 };
+}
+
+async function autoArchivarSemanaAnterior() {
+  if (ordersData.length === 0 && cortesiasData.length === 0) return;
+  const hoy = getISOWeek(new Date());
+  const viejas = ordersData.filter(o => {
+    const ow = getISOWeek(new Date(o.fecha));
+    return ow.year < hoy.year || (ow.year === hoy.year && ow.week < hoy.week);
+  });
+  if (viejas.length === 0) return;
+  console.log(`Auto-archivando ${viejas.length} pedidos de semana anterior (quedan ${ordersData.length - viejas.length} de esta semana)`);
+  viejas.forEach(o => {
+    const key = getQuincenaKey(o.fecha);
+    if (!historialData[key]) historialData[key] = {};
+    const emp = (o.numEmpleado || '0').replace(/^0+/, '') || '0';
+    if (!historialData[key][emp]) historialData[key][emp] = { nombre: o.nombre, comidas: 0, pedidos: [] };
+    if (!historialData[key][emp].pedidos) historialData[key][emp].pedidos = [];
+    historialData[key][emp].comidas += o.total || 0;
+    historialData[key][emp].pedidos.push({ fecha: o.fecha, detalle: o.detalle, opciones: o.opciones, total: o.total });
+  });
+  if (cortesiasData.length > 0) {
+    const cortesiaFecha = viejas[0]?.fecha || new Date().toISOString();
+    const key = getQuincenaKey(cortesiaFecha);
+    if (!historialData[key]) historialData[key] = {};
+    if (!historialData[key]._cortesias) historialData[key]._cortesias = [];
+    cortesiasData.forEach(c => {
+      const dias = c.dias ? Object.keys(c.dias).length : 0;
+      if (dias > 0) historialData[key]._cortesias.push({ nombre: c.nombre, comidas: dias });
+    });
+  }
+  ordersData = ordersData.filter(o => !viejas.includes(o));
+  cortesiasData = [];
+  const saved = await saveToCloud();
+  if (saved) {
+    showToast(`${viejas.length} pedidos de semana anterior archivados`);
+  } else {
+    await loadFromCloud();
+    showToast('Error al archivar pedidos anteriores');
+  }
+}
+
 // --- INIT ---
-(async () => { await loadFromCloud(); renderMenu(); checkOrderLock(); })();
+(async () => { await loadFromCloud(); await autoArchivarSemanaAnterior(); renderMenu(); checkOrderLock(); })();
 </script>
 </body>
 </html>
