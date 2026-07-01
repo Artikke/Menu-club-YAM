@@ -723,6 +723,125 @@ body { padding-bottom: 80px; }
   font-weight: 600; margin-left: 6px;
 }
 
+/* BUZON DE COMENTARIOS */
+.buzon-btn-float {
+  position: fixed; bottom: 20px; left: 20px; z-index: 90;
+  background: linear-gradient(135deg, #f39c12, #e67e22); color: #fff; border: none;
+  padding: 12px 18px; border-radius: 25px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; box-shadow: 0 4px 12px rgba(243,156,18,0.3);
+  transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+}
+.buzon-btn-float:hover { background: linear-gradient(135deg, #e67e22, #d35400); transform: scale(1.05); }
+
+.buzon-overlay {
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6); z-index: 9999;
+  align-items: center; justify-content: center;
+}
+.buzon-overlay.active { display: flex; }
+.buzon-modal {
+  background: #fff; border-radius: 16px; padding: 28px 22px;
+  max-width: 440px; width: 92%; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.buzon-modal h3 {
+  font-family: 'Montserrat', sans-serif; color: #f39c12;
+  margin-bottom: 6px; text-align: center; font-size: 1.15rem;
+}
+.buzon-modal .buzon-subtitle {
+  text-align: center; color: var(--muted); font-size: 0.82rem; margin-bottom: 18px;
+}
+.buzon-modal label {
+  font-weight: 600; color: #1a5276; font-size: 0.85rem;
+  display: block; margin-bottom: 4px; margin-top: 12px;
+}
+.buzon-modal textarea {
+  width: 100%; padding: 12px; border-radius: 10px;
+  border: 1px solid #ddd; font-family: 'Inter', sans-serif;
+  font-size: 0.95rem; resize: vertical; min-height: 80px;
+}
+.buzon-modal textarea:focus { outline: none; border-color: #f39c12; box-shadow: 0 0 0 3px rgba(243,156,18,0.1); }
+.buzon-modal input[type="text"] {
+  width: 100%; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid #ddd; font-family: 'Inter', sans-serif; font-size: 0.95rem;
+}
+.buzon-modal input[type="text"]:focus { outline: none; border-color: #f39c12; box-shadow: 0 0 0 3px rgba(243,156,18,0.1); }
+
+.buzon-foto-area {
+  margin-top: 12px; border: 2px dashed #ddd; border-radius: 12px;
+  padding: 16px; text-align: center; cursor: pointer; transition: all 0.2s;
+}
+.buzon-foto-area:hover { border-color: #f39c12; background: #fffbf0; }
+.buzon-foto-area.has-photo { border-color: #27ae60; background: #f0faf0; }
+.buzon-foto-area input[type="file"] { display: none; }
+.buzon-foto-preview {
+  max-width: 100%; max-height: 200px; border-radius: 8px;
+  margin-top: 8px; display: none;
+}
+.buzon-foto-preview.visible { display: block; }
+
+.buzon-btns {
+  display: flex; gap: 10px; margin-top: 18px;
+}
+.buzon-btns button {
+  flex: 1; padding: 12px; border-radius: 10px; border: none;
+  font-weight: 700; font-family: 'Montserrat', sans-serif;
+  font-size: 0.9rem; cursor: pointer; transition: all 0.2s;
+}
+.buzon-btn-cancel { background: #ecf0f1; color: #7f8c8d; }
+.buzon-btn-send { background: linear-gradient(135deg, #f39c12, #e67e22); color: #fff; }
+.buzon-btn-send:hover { transform: scale(1.02); }
+
+/* Admin: lista de comentarios */
+.comentario-card {
+  background: #fff; border-radius: 12px; padding: 14px 16px;
+  margin-bottom: 10px; border-left: 4px solid #f39c12;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.comentario-card .comentario-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 8px;
+}
+.comentario-card .comentario-autor {
+  font-weight: 600; color: #1a5276; font-size: 0.9rem;
+}
+.comentario-card .comentario-fecha {
+  font-size: 0.75rem; color: var(--muted);
+}
+.comentario-card .comentario-texto {
+  font-size: 0.92rem; color: #333; line-height: 1.5; margin-bottom: 8px;
+}
+.comentario-card .comentario-foto {
+  max-width: 100%; max-height: 300px; border-radius: 8px;
+  cursor: pointer; transition: transform 0.2s;
+}
+.comentario-card .comentario-foto:hover { transform: scale(1.02); }
+.comentario-card .comentario-actions {
+  display: flex; gap: 8px; margin-top: 8px;
+}
+.comentario-card .comentario-actions button {
+  padding: 6px 14px; border-radius: 8px; border: none;
+  font-size: 0.78rem; font-weight: 600; cursor: pointer;
+}
+.btn-compartir-comentario {
+  background: #25d366; color: #fff;
+}
+.btn-borrar-comentario {
+  background: #e74c3c; color: #fff;
+}
+.comentarios-empty {
+  text-align: center; color: var(--muted); padding: 20px;
+  font-size: 0.9rem;
+}
+.comentarios-badge {
+  display: inline-block; background: #e74c3c; color: #fff;
+  border-radius: 50%; width: 20px; height: 20px; line-height: 20px;
+  text-align: center; font-size: 0.7rem; font-weight: 700;
+  margin-left: 6px; vertical-align: middle;
+}
+
 .day-card.day-passed::after {
   content: 'Este dia ya paso';
   position: absolute; top: 50%; left: 50%;
@@ -802,6 +921,31 @@ body { padding-bottom: 80px; }
 </div>
 
 <!-- CANCEL BUTTON -->
+<!-- BUZON BUTTON -->
+<button class="buzon-btn-float" id="buzonBtnFloat" onclick="abrirBuzon()">&#128172; Buzón</button>
+
+<!-- BUZON MODAL -->
+<div class="buzon-overlay" id="buzonOverlay" onclick="if(event.target===this)cerrarBuzon()">
+  <div class="buzon-modal" onclick="event.stopPropagation()">
+    <h3>&#128172; Buzón de Comentarios</h3>
+    <p class="buzon-subtitle">Tu opinión nos ayuda a mejorar el servicio de comedor</p>
+    <label>Tu comentario *</label>
+    <textarea id="buzonTexto" placeholder="Escribe tu comentario, queja o sugerencia..."></textarea>
+    <label>Foto (opcional)</label>
+    <div class="buzon-foto-area" id="buzonFotoArea" onclick="document.getElementById('buzonFotoInput').click()">
+      <div id="buzonFotoPlaceholder">&#128247; Toca para agregar foto</div>
+      <input type="file" id="buzonFotoInput" accept="image/*" capture="environment" onchange="previsualizarFoto(this)" />
+      <img class="buzon-foto-preview" id="buzonFotoPreview" />
+    </div>
+    <label>Tu nombre (opcional)</label>
+    <input type="text" id="buzonNombre" placeholder="Anónimo si lo dejas vacío" />
+    <div class="buzon-btns">
+      <button class="buzon-btn-cancel" onclick="cerrarBuzon()">Cancelar</button>
+      <button class="buzon-btn-send" onclick="enviarComentario()">Enviar</button>
+    </div>
+  </div>
+</div>
+
 <button class="cancel-btn-float hidden" id="cancelBtnFloat" onclick="toggleCancelPanel()">Cancelar Pedido</button>
 
 <!-- CANCEL PANEL -->
@@ -897,6 +1041,12 @@ body { padding-bottom: 80px; }
       <input type="text" id="catBuscar" placeholder="Buscar empleado..." oninput="buscarEmpleadoCat()" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #ddd;font-size:0.9rem;" />
     </div>
     <div class="cortesia-list" id="catalogoList" style="max-height:300px;overflow-y:auto;"></div>
+  </div>
+
+  <!-- COMENTARIOS ADMIN -->
+  <div class="orders-log" style="border-left-color: #f39c12;">
+    <h3 style="color:#f39c12;">&#128172; Buzón de Comentarios <span id="comentariosBadge"></span></h3>
+    <div id="comentariosContainer"></div>
   </div>
 
   <!-- ORDERS -->
@@ -1002,6 +1152,7 @@ let ordersData = [];
 let cortesiasData = [];
 let catalogoData = {};
 let historialData = {};
+let comentariosData = [];
 let quantities = {};
 let selections = {};
 let adminAuth = false;
@@ -1046,6 +1197,7 @@ async function loadFromCloud() {
     cortesiasData = Array.isArray(d?.cortesias) ? d.cortesias : d?.cortesias ? Object.values(d.cortesias) : [];
     if (d?.catalogo && typeof d.catalogo === 'object') catalogoData = d.catalogo;
     if (d?.historial && typeof d.historial === 'object') historialData = d.historial;
+    comentariosData = Array.isArray(d?.comentarios) ? d.comentarios : d?.comentarios ? Object.values(d.comentarios) : [];
     setSyncStatus('ok', 'Sincronizado');
     return true;
   } catch(e) { setSyncStatus('error', 'Sin conexion'); return false; }
@@ -1057,7 +1209,7 @@ async function saveToCloud() {
     const r = await fetch(FB_URL + '/data.json', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ menu: menuData, orders: ordersData, cortesias: cortesiasData, catalogo: catalogoData, historial: historialData })
+      body: JSON.stringify({ menu: menuData, orders: ordersData, cortesias: cortesiasData, catalogo: catalogoData, historial: historialData, comentarios: comentariosData })
     });
     if (!r.ok) throw new Error(r.status);
     setSyncStatus('ok', 'Sincronizado');
@@ -1306,7 +1458,7 @@ let adminVisible = false;
 function toggleAdmin() {
   adminVisible = !adminVisible;
   document.getElementById('adminPanel').classList.toggle('visible', adminVisible);
-  if (adminVisible) { populateAdminForm(); renderOrders(); renderCortesias(); renderCatalogo(); }
+  if (adminVisible) { populateAdminForm(); renderOrders(); renderCortesias(); renderCatalogo(); renderComentarios(); }
   if (typeof checkOrderLock === 'function') checkOrderLock();
 }
 
@@ -2756,6 +2908,131 @@ async function autoArchivarSemanaAnterior() {
     await loadFromCloud();
     showToast('Error al archivar pedidos anteriores');
   }
+}
+
+// --- BUZON DE COMENTARIOS ---
+let buzonFotoBase64 = null;
+
+function abrirBuzon() {
+  document.getElementById('buzonOverlay').classList.add('active');
+  document.getElementById('buzonTexto').value = '';
+  document.getElementById('buzonNombre').value = '';
+  document.getElementById('buzonFotoInput').value = '';
+  document.getElementById('buzonFotoPreview').classList.remove('visible');
+  document.getElementById('buzonFotoArea').classList.remove('has-photo');
+  document.getElementById('buzonFotoPlaceholder').style.display = '';
+  buzonFotoBase64 = null;
+}
+
+function cerrarBuzon() {
+  document.getElementById('buzonOverlay').classList.remove('active');
+}
+
+function previsualizarFoto(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (file.size > 10 * 1024 * 1024) { showToast('La foto es muy grande (max 10MB)'); return; }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      const MAX = 800;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      buzonFotoBase64 = canvas.toDataURL('image/jpeg', 0.7);
+      const preview = document.getElementById('buzonFotoPreview');
+      preview.src = buzonFotoBase64;
+      preview.classList.add('visible');
+      document.getElementById('buzonFotoArea').classList.add('has-photo');
+      document.getElementById('buzonFotoPlaceholder').style.display = 'none';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function enviarComentario() {
+  const texto = document.getElementById('buzonTexto').value.trim();
+  if (!texto) { showToast('Escribe un comentario'); return; }
+  const nombre = document.getElementById('buzonNombre').value.trim() || 'Anónimo';
+  const comentario = {
+    nombre,
+    texto,
+    foto: buzonFotoBase64 || null,
+    fecha: new Date().toISOString(),
+    leido: false
+  };
+  await loadFromCloud();
+  comentariosData.push(comentario);
+  await saveToCloud();
+  cerrarBuzon();
+  showToast('Comentario enviado. Gracias por tu opinión!');
+}
+
+function renderComentarios() {
+  const container = document.getElementById('comentariosContainer');
+  const badge = document.getElementById('comentariosBadge');
+  if (!container) return;
+  const noLeidos = comentariosData.filter(c => !c.leido).length;
+  badge.innerHTML = noLeidos > 0 ? `<span class="comentarios-badge">${noLeidos}</span>` : '';
+
+  if (comentariosData.length === 0) {
+    container.innerHTML = '<div class="comentarios-empty">No hay comentarios aún</div>';
+    return;
+  }
+  const sorted = [...comentariosData].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  container.innerHTML = sorted.map((c, sortIdx) => {
+    const realIdx = comentariosData.indexOf(c);
+    const f = new Date(c.fecha);
+    const fechaStr = `${f.getDate()}/${f.getMonth()+1}/${f.getFullYear()} ${f.getHours()}:${String(f.getMinutes()).padStart(2,'0')}`;
+    return `<div class="comentario-card" style="${c.leido ? '' : 'border-left-color:#e74c3c;background:#fffbf5;'}">
+      <div class="comentario-header">
+        <span class="comentario-autor">${esc(c.nombre)}${c.leido ? '' : ' 🔴'}</span>
+        <span class="comentario-fecha">${fechaStr}</span>
+      </div>
+      <div class="comentario-texto">${esc(c.texto)}</div>
+      ${c.foto ? `<img class="comentario-foto" src="${c.foto}" onclick="window.open(this.src)" />` : ''}
+      <div class="comentario-actions">
+        <button class="btn-compartir-comentario" onclick="compartirComentario(${realIdx})">📲 Enviar a Paola</button>
+        ${c.leido ? '' : `<button style="background:#3498db;color:#fff;" onclick="marcarLeido(${realIdx})">✓ Marcar leído</button>`}
+        <button class="btn-borrar-comentario" onclick="borrarComentario(${realIdx})">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function compartirComentario(idx) {
+  const c = comentariosData[idx];
+  if (!c) return;
+  const f = new Date(c.fecha);
+  const fechaStr = `${f.getDate()}/${f.getMonth()+1}/${f.getFullYear()} ${f.getHours()}:${String(f.getMinutes()).padStart(2,'0')}`;
+  let msg = `*Comentario del buzón de comedor*\n📅 ${fechaStr}\n👤 ${c.nombre}\n\n${c.texto}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  if (!c.leido) { marcarLeido(idx); }
+}
+
+async function marcarLeido(idx) {
+  await loadFromCloud();
+  if (comentariosData[idx]) {
+    comentariosData[idx].leido = true;
+    await saveToCloud();
+    renderComentarios();
+  }
+}
+
+async function borrarComentario(idx) {
+  if (!confirm('¿Borrar este comentario?')) return;
+  await loadFromCloud();
+  comentariosData.splice(idx, 1);
+  await saveToCloud();
+  renderComentarios();
+  showToast('Comentario eliminado');
 }
 
 // --- INIT ---
