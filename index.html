@@ -2005,11 +2005,21 @@ async function agregarCortesia() {
 
 async function quitarCortesia(idx) {
   await loadFromCloud();
+  const cortesia = cortesiasData[idx];
+  if (cortesia) {
+    const dias = cortesia.dias ? Object.keys(cortesia.dias).length : 0;
+    if (dias > 0) {
+      const key = getQuincenaKey(new Date().toISOString());
+      if (!historialData[key]) historialData[key] = {};
+      if (!historialData[key]._cortesias) historialData[key]._cortesias = [];
+      historialData[key]._cortesias.push({ nombre: cortesia.nombre, comidas: dias });
+    }
+  }
   cortesiasData.splice(idx, 1);
   await saveToCloud();
   renderCortesias();
   renderOrders();
-  showToast('Cortesia eliminada');
+  showToast('Cortesia archivada y eliminada');
 }
 
 function showToast(m) {
