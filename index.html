@@ -922,12 +922,12 @@ body { padding-bottom: 80px; }
 
 <!-- CANCEL BUTTON -->
 <!-- BUZON BUTTON -->
-<button class="buzon-btn-float" id="buzonBtnFloat" onclick="abrirBuzon()">&#128172; Buzón</button>
+<button class="buzon-btn-float" id="buzonBtnFloat" onclick="abrirBuzon()">&#128172; Comentarios</button>
 
 <!-- BUZON MODAL -->
 <div class="buzon-overlay" id="buzonOverlay" onclick="if(event.target===this)cerrarBuzon()">
   <div class="buzon-modal" onclick="event.stopPropagation()">
-    <h3>&#128172; Buzón de Comentarios</h3>
+    <h3>&#128172; Comentarios</h3>
     <p class="buzon-subtitle">Tu opinión nos ayuda a mejorar el servicio de comedor</p>
     <label>Tu comentario *</label>
     <textarea id="buzonTexto" placeholder="Escribe tu comentario, queja o sugerencia..."></textarea>
@@ -1045,7 +1045,7 @@ body { padding-bottom: 80px; }
 
   <!-- COMENTARIOS ADMIN -->
   <div class="orders-log" style="border-left-color: #f39c12;">
-    <h3 style="color:#f39c12;">&#128172; Buzón de Comentarios <span id="comentariosBadge"></span></h3>
+    <h3 style="color:#f39c12;">&#128172; Comentarios <span id="comentariosBadge"></span></h3>
     <div id="comentariosContainer"></div>
   </div>
 
