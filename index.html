@@ -1378,35 +1378,63 @@ async function enviarPedido() {
   const total = Object.values(quantities).reduce((a,b)=>a+b, 0);
   if (total === 0) return;
 
-  // Verificar duplicado
+  // Verificar duplicado - combinar días
   await loadFromCloud();
   const numNormCheck = numEmp.toUpperCase().replace(/^0+/, '') || '0';
   const yaExiste = ordersData.find(o => (o.numEmpleado || '').toUpperCase().replace(/^0+/, '') === numNormCheck);
-  if (yaExiste) {
-    if (!confirm(`Ya tienes un pedido esta semana (${yaExiste.total} comida${yaExiste.total!==1?'s':''}). Quieres reemplazarlo?`)) return;
-    ordersData = ordersData.filter(o => o !== yaExiste);
-  }
 
-  const order = { nombre, numEmpleado: numEmp, fecha: new Date().toISOString(), total, detalle: {}, opciones: {} };
+  const nuevosDias = {};
+  const nuevasOpciones = {};
   menuData.dias.forEach((d, i) => {
     if (quantities[i] > 0) {
-      order.detalle[d.dia] = quantities[i];
+      nuevosDias[d.dia] = quantities[i];
       const hasAlt = d.platoAlternativo && d.platoAlternativo.trim().replace(/-/g, '').length > 0;
       if (hasAlt) {
-        order.opciones[d.dia] = selections[i]==='alternativa' ? d.platoAlternativo : d.platoFuerte;
+        nuevasOpciones[d.dia] = selections[i]==='alternativa' ? d.platoAlternativo : d.platoFuerte;
       }
     }
   });
 
+  let order;
+  let esActualizacion = false;
+  if (yaExiste) {
+    const diasExistentes = Object.keys(yaExiste.detalle || {}).join(', ');
+    const diasNuevos = Object.keys(nuevosDias).join(', ');
+    if (!confirm(`Ya tienes pedido para: ${diasExistentes}.\nAhora quieres agregar: ${diasNuevos}.\n\n¿Combinar los días?`)) return;
+    Object.assign(yaExiste.detalle, nuevosDias);
+    if (!yaExiste.opciones) yaExiste.opciones = {};
+    Object.assign(yaExiste.opciones, nuevasOpciones);
+    yaExiste.total = Object.values(yaExiste.detalle).reduce((a,b) => a+b, 0);
+    yaExiste.fecha = new Date().toISOString();
+    order = yaExiste;
+    esActualizacion = true;
+  } else {
+    order = { nombre, numEmpleado: numEmp, fecha: new Date().toISOString(), total, detalle: nuevosDias, opciones: nuevasOpciones };
+  }
+
   // Guardar con retry para evitar race condition
   for (let attempt = 0; attempt < 3; attempt++) {
-    if (attempt > 0) await loadFromCloud();
-    ordersData.push(order);
+    if (attempt > 0) {
+      await loadFromCloud();
+      if (esActualizacion) {
+        const existing = ordersData.find(o => (o.numEmpleado || '').toUpperCase().replace(/^0+/, '') === numNormCheck);
+        if (existing) {
+          Object.assign(existing.detalle, nuevosDias);
+          if (!existing.opciones) existing.opciones = {};
+          Object.assign(existing.opciones, nuevasOpciones);
+          existing.total = Object.values(existing.detalle).reduce((a,b) => a+b, 0);
+          existing.fecha = order.fecha;
+        }
+      } else {
+        ordersData.push(order);
+      }
+    } else if (!esActualizacion) {
+      ordersData.push(order);
+    }
     await saveToCloud();
-    // Verificar que el pedido se guardo
     await loadFromCloud();
-    const found = ordersData.find(o => o.nombre === order.nombre && o.fecha === order.fecha);
-    if (found) break; // Exito
+    const found = ordersData.find(o => (o.numEmpleado || '').toUpperCase().replace(/^0+/, '') === numNormCheck);
+    if (found && Object.keys(nuevosDias).every(d => found.detalle[d])) break;
     if (attempt === 2) { showToast('Error al guardar, intenta de nuevo'); return; }
   }
 
