@@ -1432,9 +1432,13 @@ async function enviarPedido() {
   let order;
   let esActualizacion = false;
   if (yaExiste) {
-    const diasExistentes = Object.keys(yaExiste.detalle || {}).join(', ');
-    const diasNuevos = Object.keys(nuevosDias).join(', ');
-    if (!confirm(`Ya tienes pedido para: ${diasExistentes}.\nAhora quieres agregar: ${diasNuevos}.\n\n¿Combinar los días?`)) return;
+    const diasExistentes = Object.keys(yaExiste.detalle || {});
+    const diasNuevosReales = Object.keys(nuevosDias).filter(d => !diasExistentes.includes(d));
+    if (diasNuevosReales.length === 0) {
+      showToast('Ya tienes pedido para esos días');
+      return;
+    }
+    if (!confirm(`Ya tienes pedido para: ${diasExistentes.join(', ')}.\nSe va a agregar: ${diasNuevosReales.join(', ')}.\n\n¿Continuar?`)) return;
     Object.assign(yaExiste.detalle, nuevosDias);
     if (!yaExiste.opciones) yaExiste.opciones = {};
     Object.assign(yaExiste.opciones, nuevasOpciones);
