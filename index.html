@@ -1369,31 +1369,35 @@ function updateSummary() {
   }
 }
 
-function buildResumen() {
+let ultimosDiasNuevos = null;
+
+function buildResumen(soloNuevos) {
   const nombre = document.getElementById('nombreInput').value.trim() || 'Sin nombre';
   const numEmp = document.getElementById('numEmpleado').value.trim();
-  const total = Object.values(quantities).reduce((a,b)=>a+b, 0);
+  const diasFiltro = soloNuevos && ultimosDiasNuevos ? ultimosDiasNuevos : null;
+  let count = 0;
   let lines = [`PEDIDO - PROESA`, `Semana ${menuData.semana} de ${menuData.mes} ${menuData.anio}`, `Nombre: ${nombre}${numEmp ? ' (#' + numEmp + ')' : ''}`, `---`];
 
   menuData.dias.forEach((d, i) => {
-    if (quantities[i] > 0) {
+    if (quantities[i] > 0 && (!diasFiltro || diasFiltro.includes(d.dia))) {
       const hasAlt = d.platoAlternativo && d.platoAlternativo.trim().replace(/-/g, '').length > 0;
       const plato = hasAlt ? (selections[i]==='alternativa' ? d.platoAlternativo + ' (Alt)' : d.platoFuerte) : d.platoFuerte;
       lines.push(`${d.dia} ${d.fecha}: ${quantities[i]} comida${quantities[i]!==1?'s':''}`);
       lines.push(`  Entrada: ${d.entrada}`);
       lines.push(`  Plato: ${plato}${(!hasAlt && d.complemento) ? ' + ' + d.complemento : ''}`);
       lines.push(`  Postre: ${d.postre}`);
+      count++;
     }
   });
 
-  lines.push(`---`, `Total: ${total} comida${total!==1?'s':''}`);
+  lines.push(`---`, `Total: ${count} comida${count!==1?'s':''}`);
   return lines.join('\n');
 }
 
 function copiarResumen() {
   const n = document.getElementById('nombreInput').value.trim();
   if (!n) { showToast('Escribe tu nombre'); document.getElementById('nombreInput').focus(); return; }
-  navigator.clipboard.writeText(buildResumen()).then(() => showToast('Copiado'));
+  navigator.clipboard.writeText(buildResumen(true)).then(() => showToast('Copiado'));
 }
 
 async function enviarPedido() {
@@ -1438,6 +1442,7 @@ async function enviarPedido() {
       showToast('Ya tienes pedido para esos días');
       return;
     }
+    ultimosDiasNuevos = diasNuevosReales;
     if (!confirm(`Ya tienes pedido para: ${diasExistentes.join(', ')}.\nSe va a agregar: ${diasNuevosReales.join(', ')}.\n\n¿Continuar?`)) return;
     Object.assign(yaExiste.detalle, nuevosDias);
     if (!yaExiste.opciones) yaExiste.opciones = {};
@@ -1447,6 +1452,7 @@ async function enviarPedido() {
     order = yaExiste;
     esActualizacion = true;
   } else {
+    ultimosDiasNuevos = null;
     order = { nombre, numEmpleado: numEmp, fecha: new Date().toISOString(), total, detalle: nuevosDias, opciones: nuevasOpciones };
   }
 
@@ -1482,13 +1488,14 @@ async function enviarPedido() {
 }
 
 function enviarWhatsAppPersonal() {
-  window.open(`https://wa.me/?text=${encodeURIComponent(buildResumen())}`, '_blank');
+  window.open(`https://wa.me/?text=${encodeURIComponent(buildResumen(true))}`, '_blank');
 }
 
 function cerrarModal() {
   document.getElementById('modalBg').classList.remove('open');
   Object.keys(quantities).forEach(k => quantities[k] = 0);
   selections = {};
+  ultimosDiasNuevos = null;
   renderMenu();
 }
 
