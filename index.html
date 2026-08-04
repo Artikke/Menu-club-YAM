@@ -3133,8 +3133,27 @@ async function borrarComentario(idx) {
   showToast('Comentario eliminado');
 }
 
+// --- AUTO-REFRESH ---
+let lastMenuHash = '';
+function menuHash() {
+  return JSON.stringify(menuData.dias?.map(d => d.platoFuerte) || []);
+}
+setInterval(async () => {
+  if (adminVisible) return;
+  const prev = menuHash();
+  await loadFromCloud();
+  const curr = menuHash();
+  if (prev && curr && prev !== curr) {
+    quantities = {};
+    selections = {};
+    renderMenu();
+    renderOrders();
+    showToast('Menú actualizado');
+  }
+}, 60000);
+
 // --- INIT ---
-(async () => { await loadFromCloud(); await autoArchivarSemanaAnterior(); renderMenu(); checkOrderLock(); })();
+(async () => { await loadFromCloud(); await autoArchivarSemanaAnterior(); renderMenu(); checkOrderLock(); lastMenuHash = menuHash(); })();
 </script>
 </body>
 </html>
