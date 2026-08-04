@@ -3134,16 +3134,23 @@ async function borrarComentario(idx) {
 }
 
 // --- AUTO-REFRESH ---
-let lastMenuHash = '';
-function menuHash() {
-  return JSON.stringify(menuData.dias?.map(d => d.platoFuerte) || []);
+function menuMatchesThisWeek() {
+  if (!menuData.dias || !menuData.dias.length || !menuData.mes || !menuData.anio) return false;
+  const hoy = new Date();
+  const mesIdx = MONTH_NAMES.indexOf(menuData.mes);
+  if (mesIdx === -1) return false;
+  const menuWeek = getISOWeek(new Date(menuData.anio, mesIdx, menuData.dias[0].fecha));
+  const thisWeek = getISOWeek(hoy);
+  return menuWeek.year === thisWeek.year && menuWeek.week === thisWeek.week;
 }
 setInterval(async () => {
   if (adminVisible) return;
-  const prev = menuHash();
+  const wasCurrentWeek = menuMatchesThisWeek();
+  const prevHash = JSON.stringify(menuData.dias?.map(d => d.platoFuerte) || []);
   await loadFromCloud();
-  const curr = menuHash();
-  if (prev && curr && prev !== curr) {
+  const nowCurrentWeek = menuMatchesThisWeek();
+  const currHash = JSON.stringify(menuData.dias?.map(d => d.platoFuerte) || []);
+  if (prevHash !== currHash || (!wasCurrentWeek && nowCurrentWeek)) {
     quantities = {};
     selections = {};
     renderMenu();
