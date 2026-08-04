@@ -2309,9 +2309,13 @@ function diaYaPaso(diaNombre) {
   const mesIdx = MONTH_NAMES.indexOf(menuData.mes);
   if (mesIdx === -1) return true;
   const fechaDia = new Date(menuData.anio, mesIdx, menuDia.fecha);
-  const hoy = new Date();
+  const ahora = new Date();
+  const hoy = new Date(ahora);
   hoy.setHours(0,0,0,0);
-  return fechaDia < hoy;
+  fechaDia.setHours(0,0,0,0);
+  if (fechaDia < hoy) return true;
+  if (fechaDia.getTime() === hoy.getTime() && ahora.getHours() >= 12) return true;
+  return false;
 }
 
 // --- CANCEL FUNCTIONS ---
