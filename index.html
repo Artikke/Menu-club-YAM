@@ -900,6 +900,9 @@ body { padding-bottom: 80px; }
   Cancelaciones: <span class="lock-time">7:00 - 11:30 AM</span> y <span class="lock-time">5:00 PM - 12:00 AM</span></p>
 </div>
 
+<!-- COUNTDOWN BANNER -->
+<div id="orderCountdown" style="display:none;text-align:center;padding:8px 16px;margin:0 auto 10px;max-width:600px;border-radius:10px;font-size:0.9rem;font-weight:600;"></div>
+
 <!-- DATOS EMPLEADO -->
 <div class="nombre-section">
   <label>Tu nombre</label>
@@ -1275,18 +1278,19 @@ async function loadFromCloud() {
 async function saveToCloud() {
   setSyncStatus('loading', 'Guardando...');
   try {
-    const promises = [
+    await Promise.all([
       fsWrite('config/orders', { items: ordersData }),
       fsWrite('config/cortesias', { items: cortesiasData }),
       fsWrite('config/comentarios', { items: comentariosData })
-    ];
-    for (const [key, val] of Object.entries(historialData)) {
-      promises.push(fsWrite(`historial/${key}`, val));
-    }
-    await Promise.all(promises);
+    ]);
     setSyncStatus('ok', 'Sincronizado');
     return true;
   } catch(e) { console.error('Save error:', e); setSyncStatus('error', 'Error al guardar'); return false; }
+}
+
+async function saveHistorial(key) {
+  try { return await fsWrite(`historial/${key}`, historialData[key]); }
+  catch(e) { console.error('Historial save error:', e); return false; }
 }
 
 async function saveMenuToCloud() {
@@ -1721,7 +1725,10 @@ async function guardarMenu() {
   quantities = {};
   selections = {};
 
-  if (borrarPedidos) await saveToCloud();
+  if (borrarPedidos) {
+    await saveToCloud();
+    for (const k of Object.keys(historialData)) await saveHistorial(k);
+  }
   const saved = await saveMenuToCloud();
   if (!saved) {
     showToast('Error al guardar');
@@ -2090,7 +2097,9 @@ function archivarPedidos() {
 
 async function limpiarPedidos() {
   if (confirm('Borrar todos los pedidos? Se guardaran en el historial para el reporte BUK.')) {
+    const histKeysBefore = new Set(Object.keys(historialData));
     archivarPedidos();
+    const histKeysAfter = Object.keys(historialData).filter(k => !histKeysBefore.has(k) || true);
     const backupOrders = [...ordersData];
     const backupCortesias = [...cortesiasData];
     ordersData = [];
@@ -2102,6 +2111,7 @@ async function limpiarPedidos() {
       showToast('Error al guardar, pedidos no se borraron');
       return;
     }
+    for (const k of new Set([...histKeysBefore, ...Object.keys(historialData)])) await saveHistorial(k);
     renderOrders();
     showToast('Pedidos archivados y limpiados');
   }
@@ -2171,8 +2181,10 @@ async function quitarCortesia(idx) {
       historialData[key]._cortesias.push({ nombre: cortesia.nombre, comidas: dias });
     }
   }
+  const histKey = dias > 0 ? getQuincenaKey(new Date().toISOString()) : null;
   cortesiasData.splice(idx, 1);
   await saveToCloud();
+  if (histKey) await saveHistorial(histKey);
   renderCortesias();
   renderOrders();
   showToast('Cortesia archivada y eliminada');
@@ -2246,11 +2258,39 @@ function isCancelOpen() {
   return (hour >= 7 && (hour < 11 || (hour === 11 && min <= 30))) || hour >= 17;
 }
 
+function updateCountdown() {
+  const banner = document.getElementById('orderCountdown');
+  if (adminVisible) { banner.style.display = 'none'; return; }
+  const now = new Date();
+  const day = now.getDay();
+  if (day === 0 || day === 6) { banner.style.display = 'none'; return; }
+  const hour = now.getHours();
+  const min = now.getMinutes();
+  if (isOrderingOpen()) {
+    const minsLeft = (11 * 60 + 30) - (hour * 60 + min);
+    const h = Math.floor(minsLeft / 60);
+    const m = minsLeft % 60;
+    const timeStr = h > 0 ? `${h}h ${m}min` : `${m} min`;
+    banner.style.display = 'block';
+    banner.style.background = minsLeft <= 30 ? '#fff3cd' : '#d4edda';
+    banner.style.color = minsLeft <= 30 ? '#856404' : '#155724';
+    banner.textContent = minsLeft <= 30 ? `Pedidos cierran en ${timeStr}` : `Pedidos abiertos — cierran a las 11:30 AM (${timeStr})`;
+  } else if (hour < 7) {
+    banner.style.display = 'block';
+    banner.style.background = '#d1ecf1';
+    banner.style.color = '#0c5460';
+    banner.textContent = 'Pedidos abren a las 7:00 AM';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
 function checkOrderLock() {
   if (adminVisible) {
     document.getElementById('lockOverlay').classList.remove('active');
     document.body.classList.remove('ordering-locked');
     document.getElementById('cancelBtnFloat').classList.remove('hidden');
+    updateCountdown();
     return;
   }
   const orderOpen = isOrderingOpen();
@@ -2258,8 +2298,8 @@ function checkOrderLock() {
   document.getElementById('lockOverlay').classList.toggle('active', !orderOpen);
   document.body.classList.toggle('ordering-locked', !orderOpen);
   document.getElementById('cancelBtnFloat').classList.toggle('hidden', !cancelOpen);
-  // Si se cierra la ventana de cancelar, cerrar panel
   if (!cancelOpen) document.getElementById('cancelPanel').classList.remove('active');
+  updateCountdown();
 }
 
 // --- CANCEL FUNCTIONS ---
@@ -3065,9 +3105,13 @@ async function autoArchivarSemanaAnterior() {
       if (dias > 0) historialData[key]._cortesias.push({ nombre: c.nombre, comidas: dias });
     });
   }
+  const histKeys = new Set();
+  viejas.forEach(o => histKeys.add(getQuincenaKey(o.fecha)));
+  if (cortesiasData.length > 0) histKeys.add(getQuincenaKey(viejas[0]?.fecha || new Date().toISOString()));
   ordersData = ordersData.filter(o => !viejas.includes(o));
   cortesiasData = [];
   const saved = await saveToCloud();
+  for (const k of histKeys) await saveHistorial(k);
   if (saved) {
     showToast(`${viejas.length} pedidos de semana anterior archivados`);
   } else {
