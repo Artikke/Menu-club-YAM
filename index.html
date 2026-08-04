@@ -1209,14 +1209,28 @@ async function saveToCloud() {
   setSyncStatus('loading', 'Guardando...');
   try {
     const r = await fetch(FB_URL + '/data.json', {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ menu: menuData, orders: ordersData, cortesias: cortesiasData, catalogo: catalogoData, historial: historialData, comentarios: comentariosData })
+      body: JSON.stringify({ orders: ordersData, cortesias: cortesiasData, historial: historialData, comentarios: comentariosData })
     });
     if (!r.ok) throw new Error(r.status);
     setSyncStatus('ok', 'Sincronizado');
     return true;
   } catch(e) { setSyncStatus('error', 'Error al guardar'); return false; }
+}
+
+async function saveMenuToCloud() {
+  setSyncStatus('loading', 'Guardando menú...');
+  try {
+    const r = await fetch(FB_URL + '/data.json', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ menu: menuData, catalogo: catalogoData })
+    });
+    if (!r.ok) throw new Error(r.status);
+    setSyncStatus('ok', 'Sincronizado');
+    return true;
+  } catch(e) { setSyncStatus('error', 'Error al guardar menú'); return false; }
 }
 
 // --- RENDER ---
@@ -1639,7 +1653,8 @@ async function guardarMenu() {
   quantities = {};
   selections = {};
 
-  const saved = await saveToCloud();
+  if (borrarPedidos) await saveToCloud();
+  const saved = await saveMenuToCloud();
   if (!saved) {
     showToast('Error al guardar');
     return;
