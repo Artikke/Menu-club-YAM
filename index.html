@@ -1309,18 +1309,6 @@ async function deleteAllOrders() {
   ));
 }
 
-async function saveToCloud() {
-  setSyncStatus('loading', 'Guardando...');
-  try {
-    await Promise.all([
-      fsWrite('config/cortesias', { items: cortesiasData }),
-      fsWrite('config/comentarios', { items: comentariosData })
-    ]);
-    setSyncStatus('ok', 'Sincronizado');
-    return true;
-  } catch(e) { console.error('Save error:', e); setSyncStatus('error', 'Error al guardar'); return false; }
-}
-
 async function saveHistorial(key) {
   try { return await fsWrite(`historial/${key}`, historialData[key]); }
   catch(e) { console.error('Historial save error:', e); return false; }
@@ -1329,13 +1317,25 @@ async function saveHistorial(key) {
 async function saveMenuToCloud() {
   setSyncStatus('loading', 'Guardando menú...');
   try {
-    await Promise.all([
-      fsWrite('config/menu', menuData),
-      fsWrite('config/catalogo', catalogoData)
-    ]);
+    await fsWrite('config/menu', menuData);
     setSyncStatus('ok', 'Sincronizado');
     return true;
   } catch(e) { console.error('Save menu error:', e); setSyncStatus('error', 'Error al guardar menú'); return false; }
+}
+
+async function saveCatalogo() {
+  try { return await fsWrite('config/catalogo', catalogoData); }
+  catch(e) { console.error('Catalogo save error:', e); return false; }
+}
+
+async function saveCortesias() {
+  try { return await fsWrite('config/cortesias', { items: cortesiasData }); }
+  catch(e) { console.error('Cortesias save error:', e); return false; }
+}
+
+async function saveComentarios() {
+  try { return await fsWrite('config/comentarios', { items: comentariosData }); }
+  catch(e) { console.error('Comentarios save error:', e); return false; }
 }
 
 // --- RENDER ---
@@ -1734,7 +1734,7 @@ async function guardarMenu() {
     await deleteAllOrders();
     ordersData = [];
     cortesiasData = [];
-    await saveToCloud();
+    await saveCortesias();
     for (const k of Object.keys(historialData)) await saveHistorial(k);
   }
   quantities = {};
@@ -2111,7 +2111,7 @@ async function limpiarPedidos() {
     await deleteAllOrders();
     ordersData = [];
     cortesiasData = [];
-    await saveToCloud();
+    await saveCortesias();
     for (const k of Object.keys(historialData)) await saveHistorial(k);
     renderOrders();
     showToast('Pedidos archivados y limpiados');
@@ -2162,7 +2162,7 @@ async function agregarCortesia() {
 
   await loadFromCloud();
   cortesiasData.push({ nombre, dias });
-  await saveToCloud();
+  await saveCortesias();
   document.getElementById('cortesiaNombre').value = '';
   menuData.dias.forEach(d => { const cb = document.getElementById('cortDia-' + d.dia); if (cb) cb.checked = false; });
   renderCortesias();
@@ -2184,7 +2184,7 @@ async function quitarCortesia(idx) {
   }
   const histKey = dias > 0 ? getQuincenaKey(new Date().toISOString()) : null;
   cortesiasData.splice(idx, 1);
-  await saveToCloud();
+  await saveCortesias();
   if (histKey) await saveHistorial(histKey);
   renderCortesias();
   renderOrders();
@@ -2488,7 +2488,7 @@ async function agregarEmpleado() {
 
   await loadFromCloud();
   catalogoData[numNorm] = { nombre, rfc };
-  await saveToCloud();
+  await saveCatalogo();
 
   document.getElementById('catNumEmp').value = '';
   document.getElementById('catNombre').value = '';
@@ -2503,7 +2503,7 @@ async function quitarEmpleado(num) {
   delete catalogoData[num];
   const numNorm = num.replace(/^0+/, '') || '0';
   delete catalogoData[numNorm];
-  await saveToCloud();
+  await saveCatalogo();
   renderCatalogo(document.getElementById('catBuscar').value.trim());
   showToast('Empleado eliminado');
 }
@@ -3137,7 +3137,7 @@ async function enviarComentario() {
   };
   await loadFromCloud();
   comentariosData.push(comentario);
-  await saveToCloud();
+  await saveComentarios();
   cerrarBuzon();
   showToast('Comentario enviado. Gracias por tu opinión!');
 }
@@ -3188,7 +3188,7 @@ async function marcarLeido(idx) {
   await loadFromCloud();
   if (comentariosData[idx]) {
     comentariosData[idx].leido = true;
-    await saveToCloud();
+    await saveComentarios();
     renderComentarios();
   }
 }
@@ -3197,7 +3197,7 @@ async function borrarComentario(idx) {
   if (!confirm('¿Borrar este comentario?')) return;
   await loadFromCloud();
   comentariosData.splice(idx, 1);
-  await saveToCloud();
+  await saveComentarios();
   renderComentarios();
   showToast('Comentario eliminado');
 }
