@@ -2303,6 +2303,17 @@ function checkOrderLock() {
   updateCountdown();
 }
 
+function diaYaPaso(diaNombre) {
+  const menuDia = menuData.dias?.find(d => d.dia === diaNombre);
+  if (!menuDia) return true;
+  const mesIdx = MONTH_NAMES.indexOf(menuData.mes);
+  if (mesIdx === -1) return true;
+  const fechaDia = new Date(menuData.anio, mesIdx, menuDia.fecha);
+  const hoy = new Date();
+  hoy.setHours(0,0,0,0);
+  return fechaDia < hoy;
+}
+
 // --- CANCEL FUNCTIONS ---
 function toggleCancelPanel() {
   const panel = document.getElementById('cancelPanel');
@@ -2338,13 +2349,17 @@ function buscarPedido() {
 
   dias.forEach(dia => {
     const opcion = order.opciones && order.opciones[dia] ? order.opciones[dia] : '';
+    const pasado = !adminVisible && diaYaPaso(dia);
     html += `
       <div class="cancel-day-item">
         <div class="day-info">
           ${esc(dia)}
           ${opcion ? `<small>${esc(opcion)}</small>` : ''}
         </div>
-        <button class="cancel-day-btn" onclick="cancelarDia('${order.nombre}', '${order.fecha}', '${dia}')">Cancelar</button>
+        ${pasado
+          ? `<span style="color:var(--muted);font-size:0.8rem;">Ya pasó</span>`
+          : `<button class="cancel-day-btn" onclick="cancelarDia('${order.nombre}', '${order.fecha}', '${dia}')">Cancelar</button>`
+        }
       </div>`;
   });
 
@@ -2353,6 +2368,7 @@ function buscarPedido() {
 
 async function cancelarDia(orderName, orderFecha, dia) {
   if (!adminVisible && !isCancelOpen()) { showToast('Horario de cancelacion cerrado'); return; }
+  if (!adminVisible && diaYaPaso(dia)) { showToast('Ese día ya pasó, no se puede cancelar'); return; }
 
   await loadFromCloud();
   const order = ordersData.find(o => o.nombre === orderName && o.fecha === orderFecha);
