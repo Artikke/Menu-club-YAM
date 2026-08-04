@@ -1132,7 +1132,57 @@ body { padding-bottom: 80px; }
 
 <script>
 // --- CONFIG ---
-const FB_URL = "https://menu-proesa-yama-default-rtdb.firebaseio.com";
+const FS_BASE = "https://firestore.googleapis.com/v1/projects/menu-proesa-yama/databases/(default)/documents";
+
+function jsToFs(val) {
+  if (val === null || val === undefined) return { nullValue: null };
+  if (typeof val === 'boolean') return { booleanValue: val };
+  if (typeof val === 'number') return Number.isInteger(val) ? { integerValue: String(val) } : { doubleValue: val };
+  if (typeof val === 'string') return { stringValue: val };
+  if (Array.isArray(val)) return { arrayValue: { values: val.map(jsToFs) } };
+  if (typeof val === 'object') {
+    const fields = {};
+    for (const [k, v] of Object.entries(val)) fields[k] = jsToFs(v);
+    return { mapValue: { fields } };
+  }
+  return { stringValue: String(val) };
+}
+
+function fsToJs(f) {
+  if ('stringValue' in f) return f.stringValue;
+  if ('integerValue' in f) return parseInt(f.integerValue);
+  if ('doubleValue' in f) return f.doubleValue;
+  if ('booleanValue' in f) return f.booleanValue;
+  if ('nullValue' in f) return null;
+  if ('arrayValue' in f) return (f.arrayValue.values || []).map(fsToJs);
+  if ('mapValue' in f) {
+    const obj = {};
+    for (const [k, v] of Object.entries(f.mapValue.fields || {})) obj[k] = fsToJs(v);
+    return obj;
+  }
+  return null;
+}
+
+async function fsRead(path) {
+  const r = await fetch(`${FS_BASE}/${path}`);
+  if (!r.ok) return null;
+  const doc = await r.json();
+  if (!doc.fields) return null;
+  const obj = {};
+  for (const [k, v] of Object.entries(doc.fields)) obj[k] = fsToJs(v);
+  return obj;
+}
+
+async function fsWrite(path, data) {
+  const fields = {};
+  for (const [k, v] of Object.entries(data)) fields[k] = jsToFs(v);
+  const r = await fetch(`${FS_BASE}/${path}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields })
+  });
+  return r.ok;
+}
 const ADMIN_PIN = "2835";
 const MENU_URL = "https://artikke.github.io/Menu-club-YAM/";
 
@@ -1191,46 +1241,64 @@ function setSyncStatus(s, m) {
 async function loadFromCloud() {
   setSyncStatus('loading', 'Cargando...');
   try {
-    const r = await fetch(FB_URL + '/data.json');
-    if (!r.ok) throw new Error(r.status);
-    const d = await r.json();
-    if (d?.menu?.dias) menuData = d.menu;
-    ordersData = Array.isArray(d?.orders) ? d.orders : d?.orders ? Object.values(d.orders) : [];
-    cortesiasData = Array.isArray(d?.cortesias) ? d.cortesias : d?.cortesias ? Object.values(d.cortesias) : [];
-    if (d?.catalogo && typeof d.catalogo === 'object') catalogoData = d.catalogo;
-    if (d?.historial && typeof d.historial === 'object') historialData = d.historial;
-    comentariosData = Array.isArray(d?.comentarios) ? d.comentarios : d?.comentarios ? Object.values(d.comentarios) : [];
+    const [menuDoc, ordersDoc, cortDoc, catDoc, comDoc] = await Promise.all([
+      fsRead('config/menu'),
+      fsRead('config/orders'),
+      fsRead('config/cortesias'),
+      fsRead('config/catalogo'),
+      fsRead('config/comentarios')
+    ]);
+    if (menuDoc?.dias) menuData = menuDoc;
+    ordersData = Array.isArray(ordersDoc?.items) ? ordersDoc.items : [];
+    cortesiasData = Array.isArray(cortDoc?.items) ? cortDoc.items : [];
+    if (catDoc && typeof catDoc === 'object') catalogoData = catDoc;
+    comentariosData = Array.isArray(comDoc?.items) ? comDoc.items : [];
+    // Load historial collection
+    const hResp = await fetch(`${FS_BASE}/historial?pageSize=100`);
+    if (hResp.ok) {
+      const hData = await hResp.json();
+      historialData = {};
+      if (hData.documents) {
+        for (const doc of hData.documents) {
+          const key = doc.name.split('/').pop();
+          const obj = {};
+          for (const [k, v] of Object.entries(doc.fields || {})) obj[k] = fsToJs(v);
+          historialData[key] = obj;
+        }
+      }
+    }
     setSyncStatus('ok', 'Sincronizado');
     return true;
-  } catch(e) { setSyncStatus('error', 'Sin conexion'); return false; }
+  } catch(e) { console.error('Load error:', e); setSyncStatus('error', 'Sin conexion'); return false; }
 }
 
 async function saveToCloud() {
   setSyncStatus('loading', 'Guardando...');
   try {
-    const r = await fetch(FB_URL + '/data.json', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orders: ordersData, cortesias: cortesiasData, historial: historialData, comentarios: comentariosData })
-    });
-    if (!r.ok) throw new Error(r.status);
+    const promises = [
+      fsWrite('config/orders', { items: ordersData }),
+      fsWrite('config/cortesias', { items: cortesiasData }),
+      fsWrite('config/comentarios', { items: comentariosData })
+    ];
+    for (const [key, val] of Object.entries(historialData)) {
+      promises.push(fsWrite(`historial/${key}`, val));
+    }
+    await Promise.all(promises);
     setSyncStatus('ok', 'Sincronizado');
     return true;
-  } catch(e) { setSyncStatus('error', 'Error al guardar'); return false; }
+  } catch(e) { console.error('Save error:', e); setSyncStatus('error', 'Error al guardar'); return false; }
 }
 
 async function saveMenuToCloud() {
   setSyncStatus('loading', 'Guardando menú...');
   try {
-    const r = await fetch(FB_URL + '/data.json', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ menu: menuData, catalogo: catalogoData })
-    });
-    if (!r.ok) throw new Error(r.status);
+    await Promise.all([
+      fsWrite('config/menu', menuData),
+      fsWrite('config/catalogo', catalogoData)
+    ]);
     setSyncStatus('ok', 'Sincronizado');
     return true;
-  } catch(e) { setSyncStatus('error', 'Error al guardar menú'); return false; }
+  } catch(e) { console.error('Save menu error:', e); setSyncStatus('error', 'Error al guardar menú'); return false; }
 }
 
 // --- RENDER ---
