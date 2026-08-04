@@ -1241,22 +1241,37 @@ function setSyncStatus(s, m) {
   el.innerHTML = `<span class="sync-dot${s==='ok'?'':s==='loading'?' loading':' error'}"></span> ${m}`;
 }
 
+function orderDocId(numEmp) {
+  return (numEmp || '0').toUpperCase().replace(/^0+/, '') || '0';
+}
+
+async function loadFsCollection(path) {
+  const r = await fetch(`${FS_BASE}/${path}?pageSize=300`);
+  if (!r.ok) return [];
+  const data = await r.json();
+  if (!data.documents) return [];
+  return data.documents.map(doc => {
+    const obj = {};
+    for (const [k, v] of Object.entries(doc.fields || {})) obj[k] = fsToJs(v);
+    return obj;
+  });
+}
+
 async function loadFromCloud() {
   setSyncStatus('loading', 'Cargando...');
   try {
-    const [menuDoc, ordersDoc, cortDoc, catDoc, comDoc] = await Promise.all([
+    const [menuDoc, cortDoc, catDoc, comDoc, ordersList] = await Promise.all([
       fsRead('config/menu'),
-      fsRead('config/orders'),
       fsRead('config/cortesias'),
       fsRead('config/catalogo'),
-      fsRead('config/comentarios')
+      fsRead('config/comentarios'),
+      loadFsCollection('orders')
     ]);
     if (menuDoc?.dias) menuData = menuDoc;
-    ordersData = Array.isArray(ordersDoc?.items) ? ordersDoc.items : [];
+    ordersData = ordersList;
     cortesiasData = Array.isArray(cortDoc?.items) ? cortDoc.items : [];
     if (catDoc && typeof catDoc === 'object') catalogoData = catDoc;
     comentariosData = Array.isArray(comDoc?.items) ? comDoc.items : [];
-    // Load historial collection
     const hResp = await fetch(`${FS_BASE}/historial?pageSize=100`);
     if (hResp.ok) {
       const hData = await hResp.json();
@@ -1275,11 +1290,29 @@ async function loadFromCloud() {
   } catch(e) { console.error('Load error:', e); setSyncStatus('error', 'Sin conexion'); return false; }
 }
 
+async function saveOrder(order) {
+  return fsWrite(`orders/${orderDocId(order.numEmpleado)}`, order);
+}
+
+async function deleteOrder(numEmp) {
+  const r = await fetch(`${FS_BASE}/orders/${orderDocId(numEmp)}`, { method: 'DELETE' });
+  return r.ok;
+}
+
+async function deleteAllOrders() {
+  const r = await fetch(`${FS_BASE}/orders?pageSize=300`);
+  if (!r.ok) return;
+  const data = await r.json();
+  if (!data.documents) return;
+  await Promise.all(data.documents.map(doc =>
+    fetch(`https://firestore.googleapis.com/v1/${doc.name}`, { method: 'DELETE' })
+  ));
+}
+
 async function saveToCloud() {
   setSyncStatus('loading', 'Guardando...');
   try {
     await Promise.all([
-      fsWrite('config/orders', { items: ordersData }),
       fsWrite('config/cortesias', { items: cortesiasData }),
       fsWrite('config/comentarios', { items: comentariosData })
     ]);
@@ -1542,31 +1575,10 @@ async function enviarPedido() {
     order = { nombre, numEmpleado: numEmp, fecha: new Date().toISOString(), total, detalle: nuevosDias, opciones: nuevasOpciones };
   }
 
-  // Guardar con retry para evitar race condition
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (attempt > 0) {
-      await loadFromCloud();
-      if (esActualizacion) {
-        const existing = ordersData.find(o => (o.numEmpleado || '').toUpperCase().replace(/^0+/, '') === numNormCheck);
-        if (existing) {
-          Object.assign(existing.detalle, nuevosDias);
-          if (!existing.opciones) existing.opciones = {};
-          Object.assign(existing.opciones, nuevasOpciones);
-          existing.total = Object.values(existing.detalle).reduce((a,b) => a+b, 0);
-          existing.fecha = order.fecha;
-        }
-      } else {
-        ordersData.push(order);
-      }
-    } else if (!esActualizacion) {
-      ordersData.push(order);
-    }
-    await saveToCloud();
-    await loadFromCloud();
-    const found = ordersData.find(o => (o.numEmpleado || '').toUpperCase().replace(/^0+/, '') === numNormCheck);
-    if (found && Object.keys(nuevosDias).every(d => found.detalle[d])) break;
-    if (attempt === 2) { showToast('Error al guardar, intenta de nuevo'); return; }
-  }
+  if (!esActualizacion) ordersData.push(order);
+  const saved = await saveOrder(order);
+  if (!saved) { showToast('Error al guardar, intenta de nuevo'); return; }
+  await loadFromCloud();
 
   document.getElementById('modalSummary').textContent = buildResumen();
   document.getElementById('modalBg').classList.add('open');
@@ -1719,16 +1731,14 @@ async function guardarMenu() {
 
   if (borrarPedidos) {
     archivarPedidos();
+    await deleteAllOrders();
     ordersData = [];
     cortesiasData = [];
-  }
-  quantities = {};
-  selections = {};
-
-  if (borrarPedidos) {
     await saveToCloud();
     for (const k of Object.keys(historialData)) await saveHistorial(k);
   }
+  quantities = {};
+  selections = {};
   const saved = await saveMenuToCloud();
   if (!saved) {
     showToast('Error al guardar');
@@ -2097,21 +2107,12 @@ function archivarPedidos() {
 
 async function limpiarPedidos() {
   if (confirm('Borrar todos los pedidos? Se guardaran en el historial para el reporte BUK.')) {
-    const histKeysBefore = new Set(Object.keys(historialData));
     archivarPedidos();
-    const histKeysAfter = Object.keys(historialData).filter(k => !histKeysBefore.has(k) || true);
-    const backupOrders = [...ordersData];
-    const backupCortesias = [...cortesiasData];
+    await deleteAllOrders();
     ordersData = [];
     cortesiasData = [];
-    const saved = await saveToCloud();
-    if (!saved) {
-      ordersData = backupOrders;
-      cortesiasData = backupCortesias;
-      showToast('Error al guardar, pedidos no se borraron');
-      return;
-    }
-    for (const k of new Set([...histKeysBefore, ...Object.keys(historialData)])) await saveHistorial(k);
+    await saveToCloud();
+    for (const k of Object.keys(historialData)) await saveHistorial(k);
     renderOrders();
     showToast('Pedidos archivados y limpiados');
   }
@@ -2353,27 +2354,22 @@ function buscarPedido() {
 async function cancelarDia(orderName, orderFecha, dia) {
   if (!adminVisible && !isCancelOpen()) { showToast('Horario de cancelacion cerrado'); return; }
 
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await loadFromCloud();
+  await loadFromCloud();
+  const order = ordersData.find(o => o.nombre === orderName && o.fecha === orderFecha);
+  if (!order) { showToast('Pedido no encontrado'); return; }
 
-    const order = ordersData.find(o => o.nombre === orderName && o.fecha === orderFecha);
-    if (!order) { showToast('Pedido no encontrado, intenta de nuevo'); return; }
+  delete order.detalle[dia];
+  if (order.opciones) delete order.opciones[dia];
+  order.total = Object.values(order.detalle).reduce((a,b) => a+b, 0);
 
-    delete order.detalle[dia];
-    if (order.opciones) delete order.opciones[dia];
-    order.total = Object.values(order.detalle).reduce((a,b) => a+b, 0);
-
-    if (Object.keys(order.detalle).length === 0) {
-      ordersData.splice(ordersData.indexOf(order), 1);
-    }
-
-    await saveToCloud();
-    await loadFromCloud();
-    const still = ordersData.find(o => o.nombre === orderName && o.fecha === orderFecha);
-    if (!still || !still.detalle[dia]) break;
-    if (attempt === 2) { showToast('Error al cancelar, intenta de nuevo'); return; }
+  if (Object.keys(order.detalle).length === 0) {
+    await deleteOrder(order.numEmpleado);
+    ordersData.splice(ordersData.indexOf(order), 1);
+  } else {
+    await saveOrder(order);
   }
 
+  await loadFromCloud();
   showToast(`${dia} cancelado`);
   buscarPedido();
   if (adminVisible) renderOrders();
@@ -3078,46 +3074,7 @@ function getISOWeek(d) {
 }
 
 async function autoArchivarSemanaAnterior() {
-  if (ordersData.length === 0 && cortesiasData.length === 0) return;
-  const hoy = getISOWeek(new Date());
-  const viejas = ordersData.filter(o => {
-    const ow = getISOWeek(new Date(o.fecha));
-    return ow.year < hoy.year || (ow.year === hoy.year && ow.week < hoy.week);
-  });
-  if (viejas.length === 0) return;
-  console.log(`Auto-archivando ${viejas.length} pedidos de semana anterior (quedan ${ordersData.length - viejas.length} de esta semana)`);
-  viejas.forEach(o => {
-    const key = getQuincenaKey(o.fecha);
-    if (!historialData[key]) historialData[key] = {};
-    const emp = (o.numEmpleado || '0').replace(/^0+/, '') || '0';
-    if (!historialData[key][emp]) historialData[key][emp] = { nombre: o.nombre, comidas: 0, pedidos: [] };
-    if (!historialData[key][emp].pedidos) historialData[key][emp].pedidos = [];
-    historialData[key][emp].comidas += o.total || 0;
-    historialData[key][emp].pedidos.push({ fecha: o.fecha, detalle: o.detalle, opciones: o.opciones, total: o.total });
-  });
-  if (cortesiasData.length > 0) {
-    const cortesiaFecha = viejas[0]?.fecha || new Date().toISOString();
-    const key = getQuincenaKey(cortesiaFecha);
-    if (!historialData[key]) historialData[key] = {};
-    if (!historialData[key]._cortesias) historialData[key]._cortesias = [];
-    cortesiasData.forEach(c => {
-      const dias = c.dias ? Object.keys(c.dias).length : 0;
-      if (dias > 0) historialData[key]._cortesias.push({ nombre: c.nombre, comidas: dias });
-    });
-  }
-  const histKeys = new Set();
-  viejas.forEach(o => histKeys.add(getQuincenaKey(o.fecha)));
-  if (cortesiasData.length > 0) histKeys.add(getQuincenaKey(viejas[0]?.fecha || new Date().toISOString()));
-  ordersData = ordersData.filter(o => !viejas.includes(o));
-  cortesiasData = [];
-  const saved = await saveToCloud();
-  for (const k of histKeys) await saveHistorial(k);
-  if (saved) {
-    showToast(`${viejas.length} pedidos de semana anterior archivados`);
-  } else {
-    await loadFromCloud();
-    showToast('Error al archivar pedidos anteriores');
-  }
+  // No auto-borrar pedidos anteriores — solo se archivan con "Limpiar Pedidos" manual
 }
 
 // --- BUZON DE COMENTARIOS ---
