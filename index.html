@@ -2198,13 +2198,24 @@ function showToast(m) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-// Auto-refresh: admin cada 30s, empleados cada 2 min
+// Auto-refresh: admin cada 3 min, empleados cada 5 min
 setInterval(async () => {
   if (adminVisible) { await loadFromCloud(); renderOrders(); }
-}, 30000);
+}, 180000);
 setInterval(async () => {
-  if (!adminVisible) { await loadFromCloud(); renderMenu(); }
-}, 120000);
+  if (adminVisible) return;
+  const wasCurrentWeek = menuMatchesThisWeek();
+  const prevHash = menuHash();
+  await loadFromCloud();
+  const nowCurrentWeek = menuMatchesThisWeek();
+  const currHash = menuHash();
+  if (prevHash !== currHash || (!wasCurrentWeek && nowCurrentWeek)) {
+    quantities = {}; selections = {};
+    showToast('Menú actualizado');
+  }
+  lastMenuHash = currHash;
+  renderMenu();
+}, 300000);
 
 // Admin timeout: cerrar admin despues de 15 min sin actividad
 let adminLastActivity = Date.now();
@@ -3232,21 +3243,9 @@ function menuMatchesThisWeek() {
   const thisWeek = getISOWeek(hoy);
   return menuWeek.year === thisWeek.year && menuWeek.week === thisWeek.week;
 }
-setInterval(async () => {
-  if (adminVisible) return;
-  const wasCurrentWeek = menuMatchesThisWeek();
-  const prevHash = JSON.stringify(menuData.dias?.map(d => d.platoFuerte) || []);
-  await loadFromCloud();
-  const nowCurrentWeek = menuMatchesThisWeek();
-  const currHash = JSON.stringify(menuData.dias?.map(d => d.platoFuerte) || []);
-  if (prevHash !== currHash || (!wasCurrentWeek && nowCurrentWeek)) {
-    quantities = {};
-    selections = {};
-    renderMenu();
-    renderOrders();
-    showToast('Menú actualizado');
-  }
-}, 60000);
+// Menu change detection runs with the employee refresh (every 5 min)
+let lastMenuHash = '';
+function menuHash() { return JSON.stringify(menuData.dias?.map(d => d.platoFuerte) || []); }
 
 // --- INIT ---
 (async () => { await loadFromCloud(); await autoArchivarSemanaAnterior(); renderMenu(); checkOrderLock(); lastMenuHash = menuHash(); })();
