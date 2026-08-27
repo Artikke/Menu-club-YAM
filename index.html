@@ -1543,7 +1543,7 @@ async function enviarPedido() {
   const nuevosDias = {};
   const nuevasOpciones = {};
   menuData.dias.forEach((d, i) => {
-    if (quantities[i] > 0) {
+    if (quantities[i] > 0 && (adminVisible || !isDayPassed(d.dia))) {
       nuevosDias[d.dia] = quantities[i];
       const hasAlt = d.platoAlternativo && d.platoAlternativo.trim().replace(/-/g, '').length > 0;
       if (hasAlt) {
@@ -1551,6 +1551,7 @@ async function enviarPedido() {
       }
     }
   });
+  if (Object.keys(nuevosDias).length === 0) { showToast('No hay días disponibles para pedir'); return; }
 
   let order;
   let esActualizacion = false;
