@@ -1033,8 +1033,8 @@ body { padding-bottom: 80px; }
     <div class="cortesia-list" id="cortesiaList"></div>
   </div>
 
-  <!-- CATALOGO -->
-  <div class="cortesias-section">
+  <!-- CATALOGO (super admin) -->
+  <div class="cortesias-section" id="catalogoSection" style="display:none;">
     <h4>Catalogo de Empleados <span id="catalogoCount" style="font-weight:400;font-size:0.85rem;color:var(--muted);"></span></h4>
     <div class="cortesia-add">
       <input type="text" id="catNumEmp" placeholder="No. empleado" style="flex:1;max-width:120px" />
@@ -1046,6 +1046,14 @@ body { padding-bottom: 80px; }
       <input type="text" id="catBuscar" placeholder="Buscar empleado..." oninput="buscarEmpleadoCat()" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #ddd;font-size:0.9rem;" />
     </div>
     <div class="cortesia-list" id="catalogoList" style="max-height:300px;overflow-y:auto;"></div>
+  </div>
+  <div class="cortesias-section" id="catalogoLockSection">
+    <h4>Catalogo de Empleados</h4>
+    <div style="text-align:center;padding:12px;">
+      <input type="password" id="superPinInput" placeholder="PIN de acceso" maxlength="4" style="width:120px;padding:8px 12px;border-radius:8px;border:1px solid #ddd;text-align:center;font-size:1rem;" />
+      <button onclick="unlockCatalogo()" style="margin-left:8px;">Desbloquear</button>
+      <div id="superPinError" style="color:#e74c3c;font-size:0.8rem;margin-top:4px;display:none;">PIN incorrecto</div>
+    </div>
   </div>
 
   <!-- COMENTARIOS ADMIN -->
@@ -1187,6 +1195,7 @@ async function fsWrite(path, data) {
   return r.ok;
 }
 const ADMIN_PIN = "2835";
+const SUPER_PIN = "7741";
 const MENU_URL = "https://artikke.github.io/Menu-club-YAM/";
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
@@ -2229,6 +2238,9 @@ setInterval(() => {
     adminVisible = false;
     adminAuth = false;
     document.getElementById('adminPanel').classList.remove('visible');
+    document.getElementById('catalogoSection').style.display = 'none';
+    document.getElementById('catalogoLockSection').style.display = '';
+    document.getElementById('superPinInput').value = '';
     showToast('Sesion admin cerrada por inactividad');
   }
 }, 60000);
@@ -2481,6 +2493,18 @@ function mostrarMisPedidos() {
 }
 
 // --- CATALOGO ---
+function unlockCatalogo() {
+  const pin = document.getElementById('superPinInput').value;
+  if (pin === SUPER_PIN) {
+    document.getElementById('catalogoSection').style.display = '';
+    document.getElementById('catalogoLockSection').style.display = 'none';
+    document.getElementById('superPinError').style.display = 'none';
+    renderCatalogo();
+  } else {
+    document.getElementById('superPinError').style.display = '';
+  }
+}
+
 function renderCatalogo(filtro) {
   const list = document.getElementById('catalogoList');
   const entries = Object.entries(catalogoData).sort((a, b) => (parseInt(a[0]) || 99999) - (parseInt(b[0]) || 99999));
