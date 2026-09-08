@@ -1547,8 +1547,13 @@ async function enviarPedido() {
 
   const firstName = nombre.split(' ').pop() || nombre;
   document.getElementById('modalNombre').textContent = firstName;
-  const diasList = Object.keys(order.detalle);
-  document.getElementById('modalDias').textContent = diasList.join(' · ');
+  if (esActualizacion && ultimosDiasNuevos) {
+    document.querySelector('.modal-subtitle').textContent = 'Se agrego a tu pedido:';
+    document.getElementById('modalDias').textContent = ultimosDiasNuevos.join(' · ');
+  } else {
+    document.querySelector('.modal-subtitle').textContent = 'Tu pedido quedo registrado.';
+    document.getElementById('modalDias').textContent = Object.keys(order.detalle).join(' · ');
+  }
   document.getElementById('modalBg').classList.add('open');
   renderOrders();
 }
