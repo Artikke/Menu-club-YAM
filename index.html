@@ -329,8 +329,8 @@ body {
 /* MODAL */
 .modal-bg {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.4);
-  backdrop-filter: blur(5px);
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(8px);
   display: none;
   align-items: center; justify-content: center;
   z-index: 200; padding: 20px;
@@ -340,31 +340,39 @@ body {
 
 .modal {
   background: var(--card);
-  border-radius: 20px;
+  border-radius: 24px;
   border: 1px solid var(--border);
-  max-width: 500px; width: 100%;
-  padding: 30px; text-align: center;
+  max-width: 380px; width: 100%;
+  padding: 40px 30px 30px; text-align: center;
   box-shadow: 0 20px 60px rgba(0,0,0,0.15);
 }
 
-.modal h3 { font-family: 'Montserrat', sans-serif; color: var(--gold); font-size: 1.5rem; margin-bottom: 15px; font-weight: 700; }
-.modal .check-icon { font-size: 3rem; margin-bottom: 10px; }
-
-.modal .summary-text {
-  text-align: left;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 18px;
-  font-size: 0.85rem; line-height: 1.8;
-  color: var(--white);
-  margin: 15px 0;
-  white-space: pre-line;
-  max-height: 300px;
-  overflow-y: auto;
+.modal .check-icon {
+  width: 64px; height: 64px; margin: 0 auto 20px;
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; color: #fff;
+  box-shadow: 0 4px 15px rgba(46,204,113,0.3);
 }
 
-.modal .btn-row { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+.modal h3 {
+  font-family: 'Montserrat', sans-serif;
+  color: var(--white); font-size: 1.3rem;
+  margin-bottom: 8px; font-weight: 700;
+}
+
+.modal .modal-subtitle {
+  color: var(--muted); font-size: 0.95rem;
+  line-height: 1.5; margin-bottom: 6px;
+}
+
+.modal .modal-days {
+  color: var(--gold); font-size: 0.9rem;
+  font-weight: 600; margin: 12px 0 24px;
+}
+
+.modal .btn-row { display: flex; justify-content: center; }
 
 .modal .btn-close {
   background: transparent;
@@ -947,11 +955,11 @@ body { padding-bottom: 80px; }
 <div class="modal-bg" id="modalBg">
   <div class="modal">
     <div class="check-icon">&#10003;</div>
-    <h3>Pedido Registrado</h3>
-    <p id="modalMsg" style="color:var(--white);font-size:1rem;margin:10px 0 20px;">Gracias, tu pedido quedo registrado correctamente.</p>
-    <div class="summary-text" id="modalSummary"></div>
+    <h3>Listo, <span id="modalNombre"></span></h3>
+    <p class="modal-subtitle">Tu pedido quedo registrado.</p>
+    <div class="modal-days" id="modalDias"></div>
     <div class="btn-row">
-      <button class="modal btn-close" onclick="cerrarModal()" style="background:var(--gold);color:#000;font-weight:600;border:none;padding:12px 32px;">Aceptar</button>
+      <button onclick="cerrarModal()" style="background:var(--gold);color:#000;font-weight:700;border:none;padding:14px 40px;border-radius:12px;font-size:1rem;cursor:pointer;font-family:'Inter',sans-serif;width:100%;">Listo</button>
     </div>
   </div>
 </div>
@@ -1475,29 +1483,6 @@ function updateSummary() {
 
 let ultimosDiasNuevos = null;
 
-function buildResumen(soloNuevos) {
-  const nombre = document.getElementById('nombreInput').value.trim() || 'Sin nombre';
-  const numEmp = document.getElementById('numEmpleado').value.trim();
-  const diasFiltro = soloNuevos && ultimosDiasNuevos ? ultimosDiasNuevos : null;
-  let count = 0;
-  let lines = [`PEDIDO - PROESA`, `Semana ${menuData.semana} de ${menuData.mes} ${menuData.anio}`, `Nombre: ${nombre}${numEmp ? ' (#' + numEmp + ')' : ''}`, `---`];
-
-  menuData.dias.forEach((d, i) => {
-    if (quantities[i] > 0 && (!diasFiltro || diasFiltro.includes(d.dia))) {
-      const hasAlt = d.platoAlternativo && d.platoAlternativo.trim().replace(/-/g, '').length > 0;
-      const plato = hasAlt ? (selections[i]==='alternativa' ? d.platoAlternativo + ' (Alt)' : d.platoFuerte) : d.platoFuerte;
-      lines.push(`${d.dia} ${d.fecha}: ${quantities[i]} comida${quantities[i]!==1?'s':''}`);
-      lines.push(`  Entrada: ${d.entrada}`);
-      lines.push(`  Plato: ${plato}${(!hasAlt && d.complemento) ? ' + ' + d.complemento : ''}`);
-      lines.push(`  Postre: ${d.postre}`);
-      count++;
-    }
-  });
-
-  lines.push(`---`, `Total: ${count} comida${count!==1?'s':''}`);
-  return lines.join('\n');
-}
-
 async function enviarPedido() {
   if (!isOrderingOpen() && !adminVisible) { showToast('Pedidos cerrados. Se abren a las 5:00 PM'); return; }
   const numEmp = document.getElementById('numEmpleado').value.trim();
@@ -1560,7 +1545,10 @@ async function enviarPedido() {
   if (!saved) { await loadFromCloud(); showToast('Error al guardar, intenta de nuevo'); return; }
   await loadFromCloud();
 
-  document.getElementById('modalSummary').textContent = buildResumen();
+  const firstName = nombre.split(' ').pop() || nombre;
+  document.getElementById('modalNombre').textContent = firstName;
+  const diasList = Object.keys(order.detalle);
+  document.getElementById('modalDias').textContent = diasList.join(' · ');
   document.getElementById('modalBg').classList.add('open');
   renderOrders();
 }
