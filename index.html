@@ -1527,7 +1527,6 @@ async function enviarPedido() {
       return;
     }
     ultimosDiasNuevos = diasNuevosReales;
-    if (!confirm(`Ya tienes pedido para: ${diasExistentes.join(', ')}.\nSe va a agregar: ${diasNuevosReales.join(', ')}.\n\n¿Continuar?`)) return;
     Object.assign(yaExiste.detalle, nuevosDias);
     if (!yaExiste.opciones) yaExiste.opciones = {};
     Object.assign(yaExiste.opciones, nuevasOpciones);
