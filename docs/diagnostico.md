@@ -2,6 +2,8 @@
 
 **Fecha:** 2026-10-12
 **Especialista:** Jorge Esteban Anaya
+**Dueño del proceso:** Vivi (Mariana Jiménez, mjimenez@grupoproesa.mx)
+**Area:** Talento Humano
 **Generacion:** Temprana
 
 ## Que es esta app

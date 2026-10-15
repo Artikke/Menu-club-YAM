@@ -2,9 +2,9 @@
 
 ## Dueño
 
-- **Area:** [completar]
-- **Especialista:** Jorge Esteban Anaya
-- **Contacto:** jorgeanaya679@gmail.com
+- **Area:** Talento Humano
+- **Dueño del proceso:** Vivi (Mariana Jiménez, mjimenez@grupoproesa.mx)
+- **Especialista responsable:** Jorge Esteban Anaya
 
 ## Que datos tiene esta app
 

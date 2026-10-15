@@ -12,9 +12,10 @@ Pedido semanal de comida del comedor de oficina PROESA.
 
 ## Dueño
 
-- **Area:** [completar — preguntar manana en la oficina: RH, Administracion u otra]
-- **Quien opera dia a dia:** Vivi / Paola (administradoras del comedor)
-- **Especialista:** Jorge Esteban Anaya
+- **Area:** Talento Humano
+- **Dueño del proceso:** Vivi (Mariana Jiménez, mjimenez@grupoproesa.mx)
+- **Quien opera dia a dia:** Vivi / Paola
+- **Especialista responsable:** Jorge Esteban Anaya
 
 ## Roles
 
