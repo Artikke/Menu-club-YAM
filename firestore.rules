@@ -1,0 +1,121 @@
+rules_version = '2';
+// ============================================================
+//  Reglas de Firestore - Menu YAM (proyecto menu-proesa-yama)
+//  Mismo esquema que LANS:
+//  - Todo requiere token (Firebase Auth anonimo). Sin token = nada.
+//  - PINs en config/secrets, ilegibles desde el cliente:
+//      adminPin -> nivel "admin": menu, pedidos, cortesias, historial, buzon
+//      superPin -> nivel "super": todo lo de admin + catalogo de empleados
+//  - El admin "inicia sesion" creando admin_sessions/{uid} con el PIN;
+//    las reglas comparan el PIN contra config/secrets y guardan el nivel. Expira a las 12 h.
+//  - Limitacion conocida (igual que LANS): no hay login de empleado, cualquiera con el
+//    link puede pedir o cancelar con cualquier numero de empleado.
+// ============================================================
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function secrets() {
+      return get(/databases/$(db)/documents/config/secrets).data;
+    }
+
+    function sessionPath() {
+      return /databases/$(db)/documents/admin_sessions/$(request.auth.uid);
+    }
+
+    function hasSession() {
+      return signedIn()
+        && exists(sessionPath())
+        && get(sessionPath()).data.createdAt > request.time - duration.value(12, 'h');
+    }
+
+    function level() {
+      return get(sessionPath()).data.level;
+    }
+
+    function isAdmin() {
+      return hasSession() && level() in ['admin', 'super'];
+    }
+
+    function isSuper() {
+      return hasSession() && level() == 'super';
+    }
+
+    function validOrder() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['nombre', 'numEmpleado', 'fecha', 'total', 'detalle', 'opciones'])
+        && d.nombre is string && d.nombre.size() > 0 && d.nombre.size() <= 120
+        && d.numEmpleado is string && d.numEmpleado.size() > 0 && d.numEmpleado.size() <= 20
+        && d.fecha is string && d.fecha.size() <= 40
+        && d.total is int && d.total >= 0 && d.total <= 50
+        && d.detalle is map && d.detalle.size() <= 7
+        && (!('opciones' in d) || (d.opciones is map && d.opciones.size() <= 7));
+    }
+
+    function validComentario() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['nombre', 'texto', 'foto', 'fecha', 'leido'])
+        && d.nombre is string && d.nombre.size() <= 120
+        && d.texto is string && d.texto.size() >= 1 && d.texto.size() <= 2000
+        && d.fecha is string && d.fecha.size() <= 40
+        && (!('leido' in d) || d.leido == false)
+        && (!('foto' in d) || d.foto == null || (d.foto is string && d.foto.size() <= 900000));
+    }
+
+    // --- Secretos: nadie los lee ni escribe desde el cliente ---
+    match /config/secrets {
+      allow read, write: if false;
+    }
+
+    // --- Configuracion ---
+    match /config/{doc} {
+      allow read: if (signedIn() && doc in ['menu', 'catalogo'])
+        || (isAdmin() && doc in ['cortesias', 'comentarios']);
+      allow write: if (doc in ['menu', 'cortesias', 'comentarios'] && isAdmin())
+        || (doc == 'catalogo' && isSuper());
+    }
+
+    // --- Historial por quincena (los empleados ven su acumulado) ---
+    match /historial/{quincena} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // --- Sesiones de admin (una por navegador/uid) ---
+    match /admin_sessions/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['pin', 'level', 'createdAt'])
+        && request.resource.data.createdAt == request.time
+        && (
+          (request.resource.data.level == 'super' && request.resource.data.pin == secrets().superPin)
+          || (request.resource.data.level == 'admin' && request.resource.data.pin == secrets().adminPin)
+        );
+    }
+
+    // --- Pedidos: un documento por numero de empleado ---
+    match /orders/{id} {
+      allow read: if signedIn();
+      allow create, update: if isAdmin() || (signedIn() && validOrder());
+      allow delete: if signedIn();
+    }
+
+    // --- Buzon: cualquiera crea; admin lee, marca leido y borra ---
+    match /comentarios/{id} {
+      allow read, delete: if isAdmin();
+      allow create: if signedIn() && validComentario();
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['leido']);
+    }
+
+    // Todo lo demas: bloqueado
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

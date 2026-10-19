@@ -854,7 +854,7 @@ body { padding-bottom: 80px; }
   <div class="pin-box">
     <h3>Acceso Admin</h3>
     <p>Ingresa el PIN para administrar</p>
-    <input type="password" id="pinInput" maxlength="4" placeholder="----" inputmode="numeric" />
+    <input type="password" id="pinInput" maxlength="12" placeholder="PIN" inputmode="numeric" />
     <div class="pin-error" id="pinError">PIN incorrecto</div>
     <div class="btn-row">
       <button class="btn-send" onclick="verificarPin()" style="padding:10px 30px;">Entrar</button>
@@ -1034,7 +1034,7 @@ body { padding-bottom: 80px; }
   <div class="cortesias-section" id="catalogoLockSection">
     <h4>Catalogo de Empleados</h4>
     <div style="text-align:center;padding:12px;">
-      <input type="password" id="superPinInput" placeholder="PIN de acceso" maxlength="4" style="width:120px;padding:8px 12px;border-radius:8px;border:1px solid #ddd;text-align:center;font-size:1rem;" />
+      <input type="password" id="superPinInput" placeholder="PIN de acceso" maxlength="12" inputmode="numeric" style="width:120px;padding:8px 12px;border-radius:8px;border:1px solid #ddd;text-align:center;font-size:1rem;" />
       <button onclick="unlockCatalogo()" style="margin-left:8px;">Desbloquear</button>
       <div id="superPinError" style="color:#e74c3c;font-size:0.8rem;margin-top:4px;display:none;">PIN incorrecto</div>
     </div>
@@ -1127,7 +1127,92 @@ body { padding-bottom: 80px; }
 
 <script>
 // --- CONFIG ---
-const FS_BASE = "https://firestore.googleapis.com/v1/projects/menu-proesa-yama/databases/(default)/documents";
+const FIREBASE_PROJECT_ID = "menu-proesa-yama";
+// Web API Key del proyecto Firebase (Configuracion del proyecto > General > Tus apps > Web).
+// No es secreta, pero hay que restringirla por dominio en Google Cloud Console.
+const FIREBASE_API_KEY = "PEGA_AQUI_TU_WEB_API_KEY";
+const FS_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
+
+// --- FIREBASE AUTH ANONIMO (REST, sin SDK) ---
+// Las reglas de Firestore exigen token. Los PIN viven en config/secrets (ilegible desde el cliente)
+// y se validan en las reglas al crear admin_sessions/{uid}.
+const AUTH = { idToken: null, refreshToken: null, uid: null, exp: 0 };
+const LS_RT = 'yam_fb_rt';
+let authPromise = null;
+
+async function anonSignUp() {
+  const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ returnSecureToken: true })
+  });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error?.message || 'signUp failed');
+  return j;
+}
+
+async function refreshIdToken(rt) {
+  const r = await fetch(`https://securetoken.googleapis.com/v1/token?key=${FIREBASE_API_KEY}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(rt)}`
+  });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error?.message || 'refresh failed');
+  return { idToken: j.id_token, refreshToken: j.refresh_token, localId: j.user_id, expiresIn: j.expires_in };
+}
+
+function applyAuth(j) {
+  AUTH.idToken = j.idToken;
+  AUTH.refreshToken = j.refreshToken;
+  AUTH.uid = j.localId;
+  AUTH.exp = Date.now() + (parseInt(j.expiresIn || '3600') * 1000);
+  try { localStorage.setItem(LS_RT, j.refreshToken); } catch (e) {}
+}
+
+async function ensureAuth(force) {
+  if (!force && AUTH.idToken && Date.now() < AUTH.exp - 60000) return AUTH.idToken;
+  if (authPromise) return authPromise;
+  authPromise = (async () => {
+    let stored = null;
+    try { stored = localStorage.getItem(LS_RT); } catch (e) {}
+    if (stored) {
+      try { applyAuth(await refreshIdToken(stored)); return AUTH.idToken; }
+      catch (e) { console.warn('Refresh fallo, creando nuevo usuario anonimo', e); try { localStorage.removeItem(LS_RT); } catch (_) {} }
+    }
+    applyAuth(await anonSignUp());
+    return AUTH.idToken;
+  })();
+  try { return await authPromise; } finally { authPromise = null; }
+}
+
+// fetch autenticado contra Firestore; reintenta una vez si el token expiro
+async function fsFetch(url, opts = {}, retry = true) {
+  const token = await ensureAuth();
+  const headers = Object.assign({}, opts.headers || {}, { 'Authorization': 'Bearer ' + token });
+  const r = await fetch(url, Object.assign({}, opts, { headers }));
+  if (r.status === 401 && retry) { await ensureAuth(true); return fsFetch(url, opts, false); }
+  return r;
+}
+
+// Crea admin_sessions/{uid} con { pin, level, createdAt: hora del servidor }.
+// Las reglas comparan el pin contra config/secrets; si no coincide -> 403.
+async function crearSesionAdmin(pin, level) {
+  await ensureAuth();
+  const name = `projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/admin_sessions/${AUTH.uid}`;
+  const body = {
+    writes: [{
+      update: { name, fields: { pin: { stringValue: pin }, level: { stringValue: level } } },
+      updateTransforms: [{ fieldPath: 'createdAt', setToServerValue: 'REQUEST_TIME' }]
+    }]
+  };
+  const r = await fsFetch(`${FS_BASE}:commit`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+  });
+  return r.ok;
+}
+
+async function borrarSesionAdmin() {
+  try { await ensureAuth(); await fsFetch(`${FS_BASE}/admin_sessions/${AUTH.uid}`, { method: 'DELETE' }); } catch (e) {}
+}
 
 function jsToFs(val) {
   if (val === null || val === undefined) return { nullValue: null };
@@ -1149,6 +1234,7 @@ function fsToJs(f) {
   if ('doubleValue' in f) return f.doubleValue;
   if ('booleanValue' in f) return f.booleanValue;
   if ('nullValue' in f) return null;
+  if ('timestampValue' in f) return f.timestampValue;
   if ('arrayValue' in f) return (f.arrayValue.values || []).map(fsToJs);
   if ('mapValue' in f) {
     const obj = {};
@@ -1159,7 +1245,7 @@ function fsToJs(f) {
 }
 
 async function fsRead(path) {
-  const r = await fetch(`${FS_BASE}/${path}`);
+  const r = await fsFetch(`${FS_BASE}/${path}`);
   if (!r.ok) return null;
   const doc = await r.json();
   if (!doc.fields) return null;
@@ -1171,15 +1257,13 @@ async function fsRead(path) {
 async function fsWrite(path, data) {
   const fields = {};
   for (const [k, v] of Object.entries(data)) fields[k] = jsToFs(v);
-  const r = await fetch(`${FS_BASE}/${path}`, {
+  const r = await fsFetch(`${FS_BASE}/${path}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ fields })
   });
   return r.ok;
 }
-const ADMIN_PIN = "2835";
-const SUPER_PIN = "7741";
 const MENU_URL = "https://artikke.github.io/Menu-club-YAM/";
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
@@ -1239,13 +1323,14 @@ function orderDocId(numEmp) {
 }
 
 async function loadFsCollection(path) {
-  const r = await fetch(`${FS_BASE}/${path}?pageSize=300`);
+  const r = await fsFetch(`${FS_BASE}/${path}?pageSize=300`);
   if (!r.ok) return [];
   const data = await r.json();
   if (!data.documents) return [];
   return data.documents.map(doc => {
     const obj = {};
     for (const [k, v] of Object.entries(doc.fields || {})) obj[k] = fsToJs(v);
+    obj._id = doc.name.split('/').pop();
     return obj;
   });
 }
@@ -1253,19 +1338,19 @@ async function loadFsCollection(path) {
 async function loadFromCloud() {
   setSyncStatus('loading', 'Cargando...');
   try {
-    const [menuDoc, cortDoc, catDoc, comDoc, ordersList] = await Promise.all([
+    const [menuDoc, cortDoc, catDoc, comList, ordersList] = await Promise.all([
       fsRead('config/menu'),
-      fsRead('config/cortesias'),
+      adminAuth ? fsRead('config/cortesias') : null,
       fsRead('config/catalogo'),
-      fsRead('config/comentarios'),
+      adminAuth ? loadFsCollection('comentarios') : [],
       loadFsCollection('orders')
     ]);
     if (menuDoc?.dias) menuData = menuDoc;
     ordersData = ordersList;
     cortesiasData = Array.isArray(cortDoc?.items) ? cortDoc.items : [];
     if (catDoc && typeof catDoc === 'object') catalogoData = catDoc;
-    comentariosData = Array.isArray(comDoc?.items) ? comDoc.items : [];
-    const hResp = await fetch(`${FS_BASE}/historial?pageSize=100`);
+    comentariosData = comList;
+    const hResp = await fsFetch(`${FS_BASE}/historial?pageSize=100`);
     if (hResp.ok) {
       const hData = await hResp.json();
       historialData = {};
@@ -1284,21 +1369,22 @@ async function loadFromCloud() {
 }
 
 async function saveOrder(order) {
-  return fsWrite(`orders/${orderDocId(order.numEmpleado)}`, order);
+  const { _id, ...data } = order;
+  return fsWrite(`orders/${orderDocId(order.numEmpleado)}`, data);
 }
 
 async function deleteOrder(numEmp) {
-  const r = await fetch(`${FS_BASE}/orders/${orderDocId(numEmp)}`, { method: 'DELETE' });
+  const r = await fsFetch(`${FS_BASE}/orders/${orderDocId(numEmp)}`, { method: 'DELETE' });
   return r.ok;
 }
 
 async function deleteAllOrders() {
-  const r = await fetch(`${FS_BASE}/orders?pageSize=300`);
+  const r = await fsFetch(`${FS_BASE}/orders?pageSize=300`);
   if (!r.ok) return;
   const data = await r.json();
   if (!data.documents) return;
   await Promise.all(data.documents.map(doc =>
-    fetch(`https://firestore.googleapis.com/v1/${doc.name}`, { method: 'DELETE' })
+    fsFetch(`https://firestore.googleapis.com/v1/${doc.name}`, { method: 'DELETE' })
   ));
 }
 
@@ -1326,9 +1412,40 @@ async function saveCortesias() {
   catch(e) { console.error('Cortesias save error:', e); return false; }
 }
 
-async function saveComentarios() {
-  try { return await fsWrite('config/comentarios', { items: comentariosData }); }
-  catch(e) { console.error('Comentarios save error:', e); return false; }
+// Buzon: un documento por comentario en comentarios/{autoId}. Cualquiera crea; admin lee, marca y borra.
+async function crearComentario(data) {
+  const fields = {};
+  for (const [k, v] of Object.entries(data)) fields[k] = jsToFs(v);
+  const r = await fsFetch(`${FS_BASE}/comentarios`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields })
+  });
+  return r.ok;
+}
+
+async function marcarComentarioLeido(id) {
+  const r = await fsFetch(`${FS_BASE}/comentarios/${id}?updateMask.fieldPaths=leido`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: { leido: { booleanValue: true } } })
+  });
+  return r.ok;
+}
+
+async function borrarComentarioDoc(id) {
+  const r = await fsFetch(`${FS_BASE}/comentarios/${id}`, { method: 'DELETE' });
+  return r.ok;
+}
+
+// Los comentarios de antes vivian en un arreglo en config/comentarios. Al entrar el admin
+// se pasan a la coleccion y el arreglo se vacia (solo si todos se copiaron).
+async function migrarComentariosLegado() {
+  const legado = await fsRead('config/comentarios');
+  const items = Array.isArray(legado?.items) ? legado.items : [];
+  if (!items.length) return;
+  const oks = await Promise.all(items.map(c => crearComentario({
+    nombre: c.nombre || 'Anónimo', texto: c.texto || '', foto: c.foto || null,
+    fecha: c.fecha || new Date().toISOString(), leido: !!c.leido
+  })));
+  if (oks.every(Boolean)) await fsWrite('config/comentarios', { items: [] });
 }
 
 // --- RENDER ---
@@ -1574,11 +1691,16 @@ function abrirAdmin() {
   setTimeout(() => document.getElementById('pinInput').focus(), 100);
 }
 
-function verificarPin() {
-  const pin = document.getElementById('pinInput').value;
-  if (pin === ADMIN_PIN) {
+async function verificarPin() {
+  const pin = document.getElementById('pinInput').value.trim();
+  let ok = false;
+  // El PIN de super tambien abre el panel de admin
+  try { ok = !!pin && (await crearSesionAdmin(pin, 'admin') || await crearSesionAdmin(pin, 'super')); } catch (e) { console.error(e); }
+  if (ok) {
     adminAuth = true;
     document.getElementById('pinModal').classList.remove('open');
+    await migrarComentariosLegado();
+    await loadFromCloud();
     toggleAdmin();
   } else {
     document.getElementById('pinError').style.display = 'block';
@@ -2195,6 +2317,7 @@ setInterval(() => {
   if (adminVisible && Date.now() - adminLastActivity > 15 * 60 * 1000) {
     adminVisible = false;
     adminAuth = false;
+    borrarSesionAdmin();
     document.getElementById('adminPanel').classList.remove('visible');
     document.getElementById('catalogoSection').style.display = 'none';
     document.getElementById('catalogoLockSection').style.display = '';
@@ -2451,9 +2574,12 @@ function mostrarMisPedidos() {
 }
 
 // --- CATALOGO ---
-function unlockCatalogo() {
-  const pin = document.getElementById('superPinInput').value;
-  if (pin === SUPER_PIN) {
+async function unlockCatalogo() {
+  const pin = document.getElementById('superPinInput').value.trim();
+  let ok = false;
+  try { ok = !!pin && await crearSesionAdmin(pin, 'super'); } catch (e) { console.error(e); }
+  document.getElementById('superPinInput').value = '';
+  if (ok) {
     document.getElementById('catalogoSection').style.display = '';
     document.getElementById('catalogoLockSection').style.display = 'none';
     document.getElementById('superPinError').style.display = 'none';
@@ -3153,9 +3279,8 @@ async function enviarComentario() {
     fecha: new Date().toISOString(),
     leido: false
   };
-  await loadFromCloud();
-  comentariosData.push(comentario);
-  await saveComentarios();
+  const ok = await crearComentario(comentario);
+  if (!ok) { showToast('No se pudo enviar el comentario, intenta de nuevo'); return; }
   cerrarBuzon();
   showToast('Comentario enviado. Gracias por tu opinión!');
 }
@@ -3203,19 +3328,17 @@ function compartirComentario(idx) {
 }
 
 async function marcarLeido(idx) {
-  await loadFromCloud();
-  if (comentariosData[idx]) {
-    comentariosData[idx].leido = true;
-    await saveComentarios();
-    renderComentarios();
-  }
+  const c = comentariosData[idx];
+  if (!c) return;
+  if (await marcarComentarioLeido(c._id)) c.leido = true;
+  renderComentarios();
 }
 
 async function borrarComentario(idx) {
   if (!confirm('¿Borrar este comentario?')) return;
-  await loadFromCloud();
+  const c = comentariosData[idx];
+  if (!c || !(await borrarComentarioDoc(c._id))) { showToast('No se pudo borrar'); return; }
   comentariosData.splice(idx, 1);
-  await saveComentarios();
   renderComentarios();
   showToast('Comentario eliminado');
 }
