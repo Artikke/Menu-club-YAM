@@ -1023,7 +1023,6 @@ body { padding-bottom: 80px; }
     <div class="cortesia-add">
       <input type="text" id="catNumEmp" placeholder="No. empleado" style="flex:1;max-width:120px" />
       <input type="text" id="catNombre" placeholder="Nombre completo" style="flex:2" />
-      <input type="text" id="catRFC" placeholder="RFC" style="flex:1.5" />
       <button onclick="agregarEmpleado()">Agregar</button>
     </div>
     <div style="margin-top:8px;">
@@ -1402,7 +1401,15 @@ async function saveMenuToCloud() {
   } catch(e) { console.error('Save menu error:', e); setSyncStatus('error', 'Error al guardar menú'); return false; }
 }
 
+// El catalogo no guarda RFC (Nomina lo pone desde el Gestor). Quita los que hayan quedado de antes.
+function quitarRfcCatalogo() {
+  let habia = false;
+  for (const v of Object.values(catalogoData)) if (v && 'rfc' in v) { delete v.rfc; habia = true; }
+  return habia;
+}
+
 async function saveCatalogo() {
+  quitarRfcCatalogo();
   try { return await fsWrite('config/catalogo', catalogoData); }
   catch(e) { console.error('Catalogo save error:', e); return false; }
 }
@@ -2580,6 +2587,8 @@ async function unlockCatalogo() {
   try { ok = !!pin && await crearSesionAdmin(pin, 'super'); } catch (e) { console.error(e); }
   document.getElementById('superPinInput').value = '';
   if (ok) {
+    await loadFromCloud();
+    if (quitarRfcCatalogo()) await saveCatalogo();
     document.getElementById('catalogoSection').style.display = '';
     document.getElementById('catalogoLockSection').style.display = 'none';
     document.getElementById('superPinError').style.display = 'none';
@@ -2597,7 +2606,7 @@ function renderCatalogo(filtro) {
   let filtered = entries;
   if (filtro) {
     const f = filtro.toLowerCase();
-    filtered = entries.filter(([num, d]) => num.includes(f) || (d.nombre || '').toLowerCase().includes(f) || (d.rfc || '').toLowerCase().includes(f));
+    filtered = entries.filter(([num, d]) => num.includes(f) || (d.nombre || '').toLowerCase().includes(f));
   }
 
   if (filtered.length === 0) { list.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:8px;">No se encontraron empleados</div>'; return; }
@@ -2606,7 +2615,6 @@ function renderCatalogo(filtro) {
     <div class="cortesia-item">
       <div>
         <span class="cortesia-info"><strong>#${esc(num)}</strong> — ${esc(d.nombre || 'Sin nombre')}</span>
-        <div class="cortesia-dias">${esc(d.rfc || 'Sin RFC')}</div>
       </div>
       <button class="cortesia-remove" onclick="quitarEmpleado('${num}')">Quitar</button>
     </div>`).join('');
@@ -2621,7 +2629,6 @@ function buscarEmpleadoCat() {
 async function agregarEmpleado() {
   const num = document.getElementById('catNumEmp').value.trim();
   const nombre = document.getElementById('catNombre').value.trim();
-  const rfc = document.getElementById('catRFC').value.trim().toUpperCase();
   if (!num || !nombre) { showToast('Escribe el numero y nombre'); return; }
   if (!/^[a-zA-Z0-9]+$/.test(num)) { showToast('El numero de empleado no es valido'); return; }
 
@@ -2631,12 +2638,11 @@ async function agregarEmpleado() {
   }
 
   await loadFromCloud();
-  catalogoData[numNorm] = { nombre, rfc };
+  catalogoData[numNorm] = { nombre };
   await saveCatalogo();
 
   document.getElementById('catNumEmp').value = '';
   document.getElementById('catNombre').value = '';
-  document.getElementById('catRFC').value = '';
   renderCatalogo();
   showToast(`Empleado #${num} agregado`);
 }
@@ -2707,25 +2713,17 @@ function exportarBUK() {
   const PRECIO = 56.71;
   const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-  // BUK Layout - CSV para Excel con cuadricula normal
-  let csv = 'Numero de Documento,Ficha/Col,Valor\n';
+  // BUK Layout - por numero de empleado; Nomina agrega el RFC desde el Gestor
+  const csvCampo = t => `"${String(t || '').replace(/"/g, '""')}"`;
+  let csv = 'Ficha/Col,Nombre,Valor\n';
 
   const sorted = Object.entries(conteo).sort((a, b) => (parseInt(a[0]) || 99999) - (parseInt(b[0]) || 99999));
   let totalValor = 0;
-  let sinRFC = [];
 
   sorted.forEach(([numEmp, data]) => {
-    const numNorm = numEmp.replace(/^0+/, '') || '0';
-    let cat = catalogoData[numEmp] || catalogoData[numNorm];
-    if (!cat) {
-      const match = Object.entries(catalogoData).find(([k]) => k.replace(/\D/g,'').replace(/^0+/,'') === numNorm);
-      if (match) cat = match[1];
-    }
-    const rfc = cat ? cat.rfc : '';
-    if (!rfc) sinRFC.push({ num: numEmp, nombre: data.nombre });
     const valor = (data.comidas * PRECIO).toFixed(2);
     totalValor += data.comidas * PRECIO;
-    csv += `${rfc || 'NO ENCONTRADO'},${numEmp},${valor}\n`;
+    csv += `${numEmp},${csvCampo(data.nombre)},${valor}\n`;
   });
 
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -2735,11 +2733,7 @@ function exportarBUK() {
   a.click();
   cerrarBukModal();
 
-  if (sinRFC.length > 0) {
-    showToast(`${sinRFC.length} empleado(s) sin RFC en catalogo`);
-  } else {
-    showToast('Reporte BUK descargado');
-  }
+  showToast('Reporte BUK descargado');
 }
 
 let facturaQuincena = 1;
