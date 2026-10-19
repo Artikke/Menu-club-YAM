@@ -1,4 +1,4 @@
-# Menu Club YAM - Pedidos de comedor
+# Menu Club YAMA - Pedidos de comedor
 
 Un solo `index.html` + Firestore via REST, hospedado en GitHub Pages.
 Firebase project: `menu-proesa-yama`. Mismo esquema de seguridad que Menu LANS.

@@ -1,6 +1,6 @@
 rules_version = '2';
 // ============================================================
-//  Reglas de Firestore - Menu YAM (proyecto menu-proesa-yama)
+//  Reglas de Firestore - Menu YAMA (proyecto menu-proesa-yama)
 //  Mismo esquema que LANS:
 //  - Todo requiere token (Firebase Auth anonimo). Sin token = nada.
 //  - PINs en config/secrets, ilegibles desde el cliente:
