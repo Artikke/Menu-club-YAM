@@ -1,7 +1,7 @@
 # Menu Club YAM - Pedidos de comedor
 
 Un solo `index.html` + Firestore via REST, hospedado en GitHub Pages.
-Firebase project: `menu-proesa-yama`. Mismo esquema de seguridad que Menu LANS.
+URL: https://comedor-yam.grupoproesa.mx/ · Firebase project: `menu-proesa-yama`. Mismo esquema de seguridad que Menu LANS.
 
 ## Seguridad
 - Todo acceso a Firestore requiere token de Firebase Auth anonimo.
@@ -20,7 +20,12 @@ Firebase project: `menu-proesa-yama`. Mismo esquema de seguridad que Menu LANS.
 4. **Publicar el `index.html`** nuevo (merge a `main`). Funciona tambien con las reglas viejas.
 5. **Reglas**: Firestore > Reglas > pegar [`firestore.rules`](firestore.rules) > Publicar.
 6. **Restringir la API key** en Google Cloud Console > Credenciales > Browser key:
-   referrers del dominio del comedor; APIs: Identity Toolkit, Token Service, Cloud Firestore.
+   referrers `https://comedor-yam.grupoproesa.mx/*` (y `https://artikke.github.io/*` mientras dure el cambio);
+   APIs: Identity Toolkit, Token Service, Cloud Firestore.
+
+## Dominio
+https://comedor-yam.grupoproesa.mx/ (GitHub Pages, repo `Grupo-PROESA/Menu-club-YAM`, CNAME a
+`grupo-proesa.github.io`, Enforce HTTPS). El poster `qr_poster.html` genera el QR con esa URL.
 
 Limitacion conocida (igual que LANS): no hay login de empleado; cualquiera con el link puede
 pedir o cancelar con cualquier numero de empleado.
