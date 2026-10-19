@@ -242,7 +242,7 @@ body {
       <div id="qrLoading" style="width:250px;height:250px;display:flex;align-items:center;justify-content:center;color:#7f8c8d;">Cargando QR...</div>
     </div>
     <br/>
-    <div class="url-display">comedor-yam.grupoproesa.mx</div>
+    <div class="url-display">comedor-yama.grupoproesa.mx</div>
   </div>
 
   <div class="poster-footer">
@@ -281,7 +281,7 @@ body {
 
 <script>
 // Generar QR con API, fallback a segunda API
-const qrUrl = 'https://comedor-yam.grupoproesa.mx/';
+const qrUrl = 'https://comedor-yama.grupoproesa.mx/';
 const box = document.getElementById('qrBox');
 const img = new Image();
 img.width = 250; img.height = 250;
@@ -296,7 +296,7 @@ img.onerror = function() {
   img2.style.display = 'block';
   img2.onload = function() { box.innerHTML = ''; box.appendChild(img2); };
   img2.onerror = function() {
-    document.getElementById('qrLoading').textContent = 'Visita: comedor-yam.grupoproesa.mx';
+    document.getElementById('qrLoading').textContent = 'Visita: comedor-yama.grupoproesa.mx';
   };
   img2.src = 'https://chart.googleapis.com/chart?chs=250x250&cht=qr&chl=' + encodeURIComponent(qrUrl);
 };
