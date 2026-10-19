@@ -7,29 +7,31 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
+<link rel="stylesheet" href="proesa.css" />
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --bg: #f0f4f8;
+  /* Colores de la app sobre los tokens PROESA (proesa.css) */
+  --bg: var(--proesa-mist);
   --card: #ffffff;
-  --gold: #1a5276;
-  --gold-light: #2980b9;
-  --gold-dark: #0e6655;
-  --teal: #0f9b8e;
-  --teal-light: #1abc9c;
-  --white: #1e1e1e;
+  --gold: var(--proesa-navy-700);
+  --gold-light: var(--proesa-navy-500);
+  --gold-dark: var(--proesa-teal-900);
+  --teal: var(--proesa-teal-600);
+  --teal-light: var(--proesa-teal-500);
+  --white: var(--proesa-ink);
   --muted: #7f8c8d;
-  --green: #0f9b8e;
-  --green-dark: #0e6655;
-  --border: rgba(26,82,118,0.12);
-  --shadow: 0 8px 32px rgba(26,82,118,0.1);
+  --green: #37A992;
+  --green-dark: #1F6056;
+  --border: var(--proesa-fog);
+  --shadow: var(--proesa-shadow-card-hover);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--proesa-font-sans);
   background: var(--bg);
   color: var(--white);
   min-height: 100vh;
@@ -38,7 +40,7 @@ body {
 .header {
   text-align: center;
   padding: 24px 20px 18px;
-  background: linear-gradient(135deg, #1a5276 0%, #0f9b8e 100%);
+  background: linear-gradient(135deg, #204590 0%, #37A992 100%);
   color: #fff;
 }
 
@@ -54,7 +56,7 @@ body {
 .header-logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 10px; }
 
 .header h1 {
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--proesa-font-sans);
   font-size: 1.8rem;
   color: #fff;
   letter-spacing: 3px;
@@ -137,7 +139,7 @@ body {
   border-radius: 10px;
   color: var(--white);
   font-size: 1rem;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--proesa-font-sans);
   text-align: center;
   transition: border-color 0.3s;
 }
@@ -172,7 +174,7 @@ body {
 }
 
 .day-header h2 {
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--proesa-font-sans);
   font-size: 1.2rem;
   color: #fff;
   margin-bottom: 2px;
@@ -209,7 +211,7 @@ body {
 /* ALTERNATIVA SELECTOR */
 .alt-section {
   padding: 10px 18px;
-  background: rgba(15,155,142,0.04);
+  background: rgba(55,169,146,0.04);
   border-top: 1px solid var(--border);
 }
 
@@ -236,7 +238,7 @@ body {
 }
 
 .alt-option:hover { border-color: var(--teal); }
-.alt-option.selected { border-color: var(--teal); background: rgba(15,155,142,0.06); }
+.alt-option.selected { border-color: var(--teal); background: rgba(55,169,146,0.06); }
 
 .alt-option input[type="radio"] { accent-color: var(--teal); }
 
@@ -246,7 +248,7 @@ body {
 /* ORDER ROW */
 .day-order {
   padding: 14px 18px;
-  background: rgba(26,82,118,0.03);
+  background: rgba(32,69,144,0.03);
   border-top: 1px solid var(--border);
 }
 
@@ -257,7 +259,7 @@ body {
   border-radius: 10px;
   background: var(--bg);
   color: var(--muted);
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--proesa-font-sans);
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
@@ -286,7 +288,7 @@ body {
   background: #eaf2f8;
   border-radius: 10px;
   font-size: 0.85rem;
-  color: #1a5276;
+  color: #204590;
   display: none;
 }
 #misPedidos.visible { display: block; }
@@ -320,11 +322,11 @@ body {
   color: #fff; border: none;
   padding: 12px 30px; border-radius: 10px;
   font-size: 0.95rem; font-weight: 600;
-  cursor: pointer; font-family: 'Inter', sans-serif;
+  cursor: pointer; font-family: var(--proesa-font-sans);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.btn-send:hover { transform: scale(1.03); box-shadow: 0 4px 15px rgba(15,155,142,0.3); }
+.btn-send:hover { transform: scale(1.03); box-shadow: 0 4px 15px rgba(55,169,146,0.3); }
 
 /* MODAL */
 .modal-bg {
@@ -357,7 +359,7 @@ body {
 }
 
 .modal h3 {
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--proesa-font-sans);
   color: var(--white); font-size: 1.3rem;
   margin-bottom: 8px; font-weight: 700;
 }
@@ -380,7 +382,7 @@ body {
   border: 1px solid var(--border);
   padding: 12px 24px; border-radius: 10px;
   font-size: 0.9rem; cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--proesa-font-sans);
 }
 
 /* PIN MODAL */
@@ -404,7 +406,7 @@ body {
   box-shadow: 0 20px 60px rgba(0,0,0,0.15);
 }
 
-.pin-box h3 { font-family: 'Montserrat', sans-serif; color: var(--gold); font-size: 1.3rem; margin-bottom: 5px; font-weight: 700; }
+.pin-box h3 { font-family: var(--proesa-font-sans); color: var(--gold); font-size: 1.3rem; margin-bottom: 5px; font-weight: 700; }
 .pin-box p { color: var(--muted); font-size: 0.85rem; margin-bottom: 18px; }
 
 .pin-box input {
@@ -412,7 +414,7 @@ body {
   background: var(--bg); border: 1px solid var(--border);
   border-radius: 10px; color: var(--white);
   font-size: 1.5rem; text-align: center;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--proesa-font-sans);
   letter-spacing: 10px;
 }
 
@@ -426,19 +428,19 @@ body {
 .admin-toggle { position: fixed; top: 15px; right: 15px; z-index: 50; }
 
 .admin-toggle button {
-  background: rgba(26,82,118,0.08);
+  background: rgba(32,69,144,0.08);
   border: 1px solid var(--border);
   color: var(--gold);
   padding: 8px 16px; border-radius: 8px;
   font-size: 0.75rem; cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--proesa-font-sans);
   letter-spacing: 1px; text-transform: uppercase;
   font-weight: 600;
 }
 
 .admin-panel { display: none; max-width: 900px; margin: 20px auto; padding: 0 20px 100px; }
 .admin-panel.visible { display: block; }
-.admin-panel h3 { font-family: 'Montserrat', sans-serif; color: var(--gold); font-size: 1.3rem; margin-bottom: 15px; text-align: center; font-weight: 700; }
+.admin-panel h3 { font-family: var(--proesa-font-sans); color: var(--gold); font-size: 1.3rem; margin-bottom: 15px; text-align: center; font-weight: 700; }
 
 .admin-form-section {
   background: var(--card);
@@ -466,14 +468,14 @@ body {
   width: 100%; padding: 10px 14px;
   background: var(--bg); border: 1px solid var(--border);
   border-radius: 8px; color: var(--white);
-  font-size: 0.9rem; font-family: 'Inter', sans-serif;
+  font-size: 0.9rem; font-family: var(--proesa-font-sans);
 }
 
 .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--gold); }
 .form-group input::placeholder { color: #aaa; }
 
 .day-form-card {
-  background: rgba(26,82,118,0.03);
+  background: rgba(32,69,144,0.03);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px; margin-bottom: 15px;
@@ -486,15 +488,15 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-.day-form-header h5 { font-family: 'Montserrat', sans-serif; color: var(--gold); font-size: 1.1rem; font-weight: 700; }
+.day-form-header h5 { font-family: var(--proesa-font-sans); color: var(--gold); font-size: 1.1rem; font-weight: 700; }
 
 .btn-add-day {
-  background: rgba(26,82,118,0.04);
+  background: rgba(32,69,144,0.04);
   border: 1px dashed var(--gold);
   color: var(--gold);
   padding: 14px; border-radius: 12px;
   width: 100%; font-size: 0.9rem;
-  cursor: pointer; font-family: 'Inter', sans-serif;
+  cursor: pointer; font-family: var(--proesa-font-sans);
   margin-bottom: 15px;
 }
 
@@ -509,7 +511,7 @@ body {
 .admin-btn {
   padding: 12px 28px; border-radius: 10px;
   font-size: 0.9rem; font-weight: 600;
-  cursor: pointer; font-family: 'Inter', sans-serif;
+  cursor: pointer; font-family: var(--proesa-font-sans);
   border: none; transition: transform 0.2s;
 }
 
@@ -531,7 +533,7 @@ body {
 }
 
 .orders-table th {
-  background: rgba(26,82,118,0.08);
+  background: rgba(32,69,144,0.08);
   color: var(--gold); padding: 12px 14px;
   text-align: left; font-size: 0.7rem;
   text-transform: uppercase; letter-spacing: 1px;
@@ -546,7 +548,7 @@ body {
 }
 
 .orders-table tr:last-child td { border-bottom: none; }
-.orders-table .total-row { background: rgba(26,82,118,0.06); font-weight: 700; }
+.orders-table .total-row { background: rgba(32,69,144,0.06); font-weight: 700; }
 
 .no-orders { text-align: center; color: var(--muted); padding: 30px; font-size: 0.9rem; }
 
@@ -554,14 +556,14 @@ body {
   background: var(--green-dark); color: #fff; border: none;
   padding: 10px 24px; border-radius: 10px;
   font-size: 0.85rem; font-weight: 600;
-  cursor: pointer; font-family: 'Inter', sans-serif;
+  cursor: pointer; font-family: var(--proesa-font-sans);
 }
 
 .btn-clear-orders {
   background: #c0392b; color: #fff; border: none;
   padding: 10px 24px; border-radius: 10px;
   font-size: 0.85rem; font-weight: 600;
-  cursor: pointer; font-family: 'Inter', sans-serif;
+  cursor: pointer; font-family: var(--proesa-font-sans);
 }
 
 .buk-q-btn {
@@ -601,7 +603,7 @@ body { padding-bottom: 80px; }
 /* LOCK OVERLAY */
 .lock-overlay {
   display: none;
-  background: rgba(26, 82, 118, 0.95);
+  background: rgba(32,69,144, 0.95);
   border-radius: 16px;
   padding: 30px 20px;
   margin: 0 auto 20px;
@@ -612,7 +614,7 @@ body { padding-bottom: 80px; }
 }
 .lock-overlay.active { display: block; }
 .lock-overlay .lock-icon { font-size: 2.5rem; margin-bottom: 10px; }
-.lock-overlay h3 { font-family: 'Montserrat', sans-serif; font-size: 1.2rem; margin-bottom: 8px; }
+.lock-overlay h3 { font-family: var(--proesa-font-sans); font-size: 1.2rem; margin-bottom: 8px; }
 .lock-overlay p { font-size: 0.95rem; opacity: 0.9; line-height: 1.5; }
 .lock-overlay .lock-time { font-weight: 700; color: var(--teal-light); font-size: 1.1rem; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
@@ -629,7 +631,7 @@ body { padding-bottom: 80px; }
   position: fixed; bottom: 80px; right: 20px; z-index: 90;
   background: #e74c3c; color: #fff; border: none;
   padding: 10px 18px; border-radius: 25px;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--proesa-font-sans);
   font-size: 0.85rem; font-weight: 600;
   cursor: pointer; box-shadow: 0 4px 12px rgba(231,76,60,0.3);
   transition: all 0.2s;
@@ -644,7 +646,7 @@ body { padding-bottom: 80px; }
   box-shadow: 0 8px 24px rgba(231,76,60,0.15);
 }
 .cancel-panel.active { display: block; }
-.cancel-panel h3 { font-family: 'Montserrat', sans-serif; color: #e74c3c; margin-bottom: 15px; text-align: center; }
+.cancel-panel h3 { font-family: var(--proesa-font-sans); color: #e74c3c; margin-bottom: 15px; text-align: center; }
 .cancel-search { display: flex; gap: 10px; margin-bottom: 15px; }
 .cancel-search input {
   flex: 1; padding: 12px; border: 1px solid var(--border);
@@ -677,7 +679,7 @@ body { padding-bottom: 80px; }
 
 /* CORTESIAS ADMIN */
 .cortesias-section { margin-top: 20px; padding: 15px; background: var(--bg); border-radius: 12px; }
-.cortesias-section h4 { font-family: 'Montserrat', sans-serif; margin-bottom: 12px; color: var(--gold); }
+.cortesias-section h4 { font-family: var(--proesa-font-sans); margin-bottom: 12px; color: var(--gold); }
 .cortesia-add { display: flex; gap: 8px; margin-bottom: 12px; }
 .cortesia-add input { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; }
 .cortesia-add button {
@@ -718,7 +720,7 @@ body { padding-bottom: 80px; }
   position: fixed; bottom: 20px; left: 20px; z-index: 90;
   background: linear-gradient(135deg, #f39c12, #e67e22); color: #fff; border: none;
   padding: 12px 18px; border-radius: 25px;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--proesa-font-sans);
   font-size: 0.85rem; font-weight: 600;
   cursor: pointer; box-shadow: 0 4px 12px rgba(243,156,18,0.3);
   transition: all 0.2s; display: flex; align-items: center; gap: 6px;
@@ -737,25 +739,25 @@ body { padding-bottom: 80px; }
   box-shadow: 0 20px 60px rgba(0,0,0,0.3);
 }
 .buzon-modal h3 {
-  font-family: 'Montserrat', sans-serif; color: #f39c12;
+  font-family: var(--proesa-font-sans); color: #f39c12;
   margin-bottom: 6px; text-align: center; font-size: 1.15rem;
 }
 .buzon-modal .buzon-subtitle {
   text-align: center; color: var(--muted); font-size: 0.82rem; margin-bottom: 18px;
 }
 .buzon-modal label {
-  font-weight: 600; color: #1a5276; font-size: 0.85rem;
+  font-weight: 600; color: #204590; font-size: 0.85rem;
   display: block; margin-bottom: 4px; margin-top: 12px;
 }
 .buzon-modal textarea {
   width: 100%; padding: 12px; border-radius: 10px;
-  border: 1px solid #ddd; font-family: 'Inter', sans-serif;
+  border: 1px solid #ddd; font-family: var(--proesa-font-sans);
   font-size: 0.95rem; resize: vertical; min-height: 80px;
 }
 .buzon-modal textarea:focus { outline: none; border-color: #f39c12; box-shadow: 0 0 0 3px rgba(243,156,18,0.1); }
 .buzon-modal input[type="text"] {
   width: 100%; padding: 10px 12px; border-radius: 10px;
-  border: 1px solid #ddd; font-family: 'Inter', sans-serif; font-size: 0.95rem;
+  border: 1px solid #ddd; font-family: var(--proesa-font-sans); font-size: 0.95rem;
 }
 .buzon-modal input[type="text"]:focus { outline: none; border-color: #f39c12; box-shadow: 0 0 0 3px rgba(243,156,18,0.1); }
 
@@ -777,7 +779,7 @@ body { padding-bottom: 80px; }
 }
 .buzon-btns button {
   flex: 1; padding: 12px; border-radius: 10px; border: none;
-  font-weight: 700; font-family: 'Montserrat', sans-serif;
+  font-weight: 700; font-family: var(--proesa-font-sans);
   font-size: 0.9rem; cursor: pointer; transition: all 0.2s;
 }
 .buzon-btn-cancel { background: #ecf0f1; color: #7f8c8d; }
@@ -795,7 +797,7 @@ body { padding-bottom: 80px; }
   margin-bottom: 8px;
 }
 .comentario-card .comentario-autor {
-  font-weight: 600; color: #1a5276; font-size: 0.9rem;
+  font-weight: 600; color: #204590; font-size: 0.9rem;
 }
 .comentario-card .comentario-fecha {
   font-size: 0.75rem; color: var(--muted);
@@ -836,9 +838,9 @@ body { padding-bottom: 80px; }
   content: 'Este dia ya paso';
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(26,82,118,0.9); color: #fff;
+  background: rgba(32,69,144,0.9); color: #fff;
   padding: 8px 16px; border-radius: 8px;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--proesa-font-sans);
   font-size: 0.85rem; font-weight: 600;
   white-space: nowrap;
 }
@@ -959,7 +961,7 @@ body { padding-bottom: 80px; }
     <p class="modal-subtitle">Tu pedido quedo registrado.</p>
     <div class="modal-days" id="modalDias"></div>
     <div class="btn-row">
-      <button onclick="cerrarModal()" style="background:var(--gold);color:#000;font-weight:700;border:none;padding:14px 40px;border-radius:12px;font-size:1rem;cursor:pointer;font-family:'Inter',sans-serif;width:100%;">Listo</button>
+      <button onclick="cerrarModal()" style="background:var(--gold);color:#000;font-weight:700;border:none;padding:14px 40px;border-radius:12px;font-size:1rem;cursor:pointer;font-family: var(--proesa-font-sans);width:100%;">Listo</button>
     </div>
   </div>
 </div>
@@ -999,7 +1001,7 @@ body { padding-bottom: 80px; }
 
   <div class="admin-btn-row">
     <button class="admin-btn save" onclick="guardarMenu()">Guardar y Publicar</button>
-    <button onclick="compartirMenuWhatsApp()" style="background:#25d366;color:#fff;border:none;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:8px;">
+    <button onclick="compartirMenuWhatsApp()" style="background:#25d366;color:#fff;border:none;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family: var(--proesa-font-sans);display:flex;align-items:center;gap:8px;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
       Compartir Menu
     </button>
@@ -1049,7 +1051,7 @@ body { padding-bottom: 80px; }
   <div class="orders-log">
     <h3>Pedidos Recibidos</h3>
     <div class="admin-btn-row" style="margin-bottom:15px;">
-      <button onclick="enviarOrdenCocinera()" style="background:#25d366;color:#fff;border:none;padding:10px 20px;border-radius:10px;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:8px;">
+      <button onclick="enviarOrdenCocinera()" style="background:#25d366;color:#fff;border:none;padding:10px 20px;border-radius:10px;font-size:0.82rem;font-weight:600;cursor:pointer;font-family: var(--proesa-font-sans);display:flex;align-items:center;gap:8px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
         Enviar Orden a Cocina
       </button>
@@ -1064,9 +1066,9 @@ body { padding-bottom: 80px; }
 <!-- BUK EXPORT MODAL -->
 <div id="bukModalBg" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:none;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:16px;padding:30px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-    <h3 style="font-family:'Montserrat',sans-serif;color:#1a5276;margin-bottom:16px;text-align:center;">Exportar a BUK</h3>
+    <h3 style="font-family: var(--proesa-font-sans);color:#204590;margin-bottom:16px;text-align:center;">Exportar a BUK</h3>
     <div style="margin-bottom:14px;">
-      <label style="font-weight:600;color:#1a5276;font-size:0.9rem;">Mes</label>
+      <label style="font-weight:600;color:#204590;font-size:0.9rem;">Mes</label>
       <select id="bukMes" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-top:4px;font-size:0.95rem;">
         <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
         <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
@@ -1075,11 +1077,11 @@ body { padding-bottom: 80px; }
       </select>
     </div>
     <div style="margin-bottom:14px;">
-      <label style="font-weight:600;color:#1a5276;font-size:0.9rem;">Año</label>
+      <label style="font-weight:600;color:#204590;font-size:0.9rem;">Año</label>
       <input type="number" id="bukAnio" value="2026" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-top:4px;font-size:0.95rem;"/>
     </div>
     <div style="margin-bottom:20px;">
-      <label style="font-weight:600;color:#1a5276;font-size:0.9rem;">Quincena</label>
+      <label style="font-weight:600;color:#204590;font-size:0.9rem;">Quincena</label>
       <div style="display:flex;gap:10px;margin-top:6px;">
         <button id="bukQ1" onclick="selQuincena(1)" class="buk-q-btn buk-q-active">1 - 15</button>
         <button id="bukQ2" onclick="selQuincena(2)" class="buk-q-btn">16 - 31</button>
@@ -1095,9 +1097,9 @@ body { padding-bottom: 80px; }
 <!-- FACTURA MODAL -->
 <div id="facturaModalBg" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:16px;padding:30px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-    <h3 style="font-family:'Montserrat',sans-serif;color:#27ae60;margin-bottom:16px;text-align:center;">Conciliar Factura</h3>
+    <h3 style="font-family: var(--proesa-font-sans);color:#27ae60;margin-bottom:16px;text-align:center;">Conciliar Factura</h3>
     <div style="margin-bottom:14px;">
-      <label style="font-weight:600;color:#1a5276;font-size:0.9rem;">Mes</label>
+      <label style="font-weight:600;color:#204590;font-size:0.9rem;">Mes</label>
       <select id="facturaMes" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-top:4px;font-size:0.95rem;">
         <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
         <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
@@ -1106,11 +1108,11 @@ body { padding-bottom: 80px; }
       </select>
     </div>
     <div style="margin-bottom:14px;">
-      <label style="font-weight:600;color:#1a5276;font-size:0.9rem;">Año</label>
+      <label style="font-weight:600;color:#204590;font-size:0.9rem;">Año</label>
       <input type="number" id="facturaAnio" value="2026" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-top:4px;font-size:0.95rem;"/>
     </div>
     <div style="margin-bottom:20px;">
-      <label style="font-weight:600;color:#1a5276;font-size:0.9rem;">Quincena</label>
+      <label style="font-weight:600;color:#204590;font-size:0.9rem;">Quincena</label>
       <div style="display:flex;gap:10px;margin-top:6px;">
         <button id="facturaQ1" onclick="selQuincenaFactura(1)" class="buk-q-btn buk-q-active">1 - 15</button>
         <button id="facturaQ2" onclick="selQuincenaFactura(2)" class="buk-q-btn">16 - 31</button>
@@ -2017,8 +2019,8 @@ function renderOrders() {
 function exportarCSV() {
   if (!ordersData.length) { showToast('No hay pedidos'); return; }
 
-  const hd = '#1a5276';
-  const hd2 = '#0f9b8e';
+  const hd = '#204590';
+  const hd2 = '#37A992';
   const lt = '#eaf2f8';
   const bdr = 'border:1px solid #bdc3c7;padding:8px 12px;';
 
