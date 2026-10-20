@@ -146,6 +146,15 @@ body {
 
 .nombre-section input:focus { outline: none; border-color: var(--gold); }
 .nombre-section input::placeholder { color: var(--muted); }
+.nombre-section input.bloqueado,
+.cancel-search input.bloqueado { background: var(--proesa-navy-50); color: var(--proesa-navy-700); font-weight: 700; cursor: not-allowed; }
+
+/* SSO: sesion del portal / aviso para entrar desde el portal */
+.sso-bar { max-width: 500px; margin: 16px auto 0; padding: 0 20px; text-align: center; font-size: 0.85rem; color: var(--muted); }
+.sso-bar a { color: var(--proesa-navy-700); font-weight: 600; }
+.sso-aviso { background: var(--proesa-navy-50); border: 1px solid var(--proesa-navy-200); border-radius: 10px; padding: 14px 16px; color: var(--proesa-ink); }
+.sso-aviso strong { display: block; font-size: 1rem; margin-bottom: 6px; color: var(--proesa-navy-700); }
+.sso-aviso .btn-portal { display: inline-block; margin-top: 10px; padding: 10px 22px; border-radius: 10px; background: var(--proesa-navy-700); color: #fff; text-decoration: none; }
 
 /* MENU GRID */
 .menu-grid {
@@ -893,6 +902,9 @@ body { padding-bottom: 80px; }
 <!-- COUNTDOWN BANNER -->
 <div id="orderCountdown" style="display:none;text-align:center;padding:8px 16px;margin:0 auto 10px;max-width:600px;border-radius:10px;font-size:0.9rem;font-weight:600;"></div>
 
+<!-- SESION DEL PORTAL -->
+<div class="sso-bar" id="ssoBar" style="display:none"></div>
+
 <!-- DATOS EMPLEADO -->
 <div class="nombre-section">
   <label>Tu nombre</label>
@@ -1133,11 +1145,14 @@ const FIREBASE_PROJECT_ID = "menu-proesa-yama";
 // No es secreta, pero hay que restringirla por dominio en Google Cloud Console.
 const FIREBASE_API_KEY = "AIzaSyDkXnkv9k4HlqhUZyBnalhffg8CbLTOHTw";
 const FS_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
+// Los empleados entran desde el portal; la Cloud Function ssoCallback regresa aqui con #ct=<custom token>
+const PORTAL_URL = "https://portal.grupoproesa.mx/";
 
 // --- FIREBASE AUTH ANONIMO (REST, sin SDK) ---
 // Las reglas de Firestore exigen token. Los PIN viven en config/secrets (ilegible desde el cliente)
 // y se validan en las reglas al crear admin_sessions/{uid}.
-const AUTH = { idToken: null, refreshToken: null, uid: null, exp: 0 };
+// numEmp: claim del token del portal (ya normalizado como orderDocId). null = anonimo.
+const AUTH = { idToken: null, refreshToken: null, uid: null, exp: 0, numEmp: null };
 const LS_RT = 'yam_fb_rt';
 let authPromise = null;
 
@@ -1161,12 +1176,97 @@ async function refreshIdToken(rt) {
   return { idToken: j.id_token, refreshToken: j.refresh_token, localId: j.user_id, expiresIn: j.expires_in };
 }
 
+async function signInWithCustomToken(ct) {
+  const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${FIREBASE_API_KEY}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: ct, returnSecureToken: true })
+  });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error?.message || 'custom token');
+  return j; // { idToken, refreshToken, expiresIn }
+}
+
+function claimsDe(idToken) {
+  try { return JSON.parse(decodeURIComponent(escape(atob(idToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))))); }
+  catch (e) { return {}; }
+}
+
 function applyAuth(j) {
+  const c = claimsDe(j.idToken);
   AUTH.idToken = j.idToken;
   AUTH.refreshToken = j.refreshToken;
-  AUTH.uid = j.localId;
+  // signInWithCustomToken no trae localId: el uid sale del token (admin_sessions/{uid} lo necesita)
+  AUTH.uid = j.localId || c.user_id || c.sub || null;
   AUTH.exp = Date.now() + (parseInt(j.expiresIn || '3600') * 1000);
+  AUTH.numEmp = typeof c.numEmp === 'string' && c.numEmp ? c.numEmp : null;
+  AUTH.nombre = typeof c.nombre === 'string' ? c.nombre : '';
   try { localStorage.setItem(LS_RT, j.refreshToken); } catch (e) {}
+  // Tambien al renovar un refresh token guardado, no solo al llegar con #ct
+  fijarEmpleadoUI();
+}
+
+// Si llega #ct= (desde ssoCallback), lo canjea por idToken. Regresa true si hubo SSO.
+async function iniciarDesdeSSO() {
+  const m = location.hash.match(/ct=([^&]+)/);
+  if (!m) return false;
+  history.replaceState(null, '', location.pathname + location.search);
+  try {
+    applyAuth(await signInWithCustomToken(decodeURIComponent(m[1])));
+    return true;
+  } catch (e) {
+    console.error('SSO', e);
+    showToast('No se pudo iniciar sesion desde el portal. Intenta de nuevo.');
+    return false;
+  }
+}
+
+// Errores que regresa ssoCallback en ?error=...
+function mostrarErrorSSO() {
+  const err = new URLSearchParams(location.search).get('error');
+  if (!err) return;
+  const msgs = {
+    sin_ficha: 'Tu correo no tiene numero de empleado en el Gestor. Contacta a RRHH.',
+    sin_correo: 'El portal no envio tu correo. Contacta a TI.',
+    gestor: 'No se pudo consultar el Gestor de Personal. Intenta mas tarde.'
+  };
+  showToast(msgs[err] || 'No se pudo iniciar sesion desde el portal. Intenta de nuevo.');
+  history.replaceState(null, '', location.pathname + location.hash);
+}
+
+// Fija (o libera) el numero de empleado segun la sesion. El admin con el panel abierto
+// puede escribir cualquier numero; un empleado del portal solo el suyo.
+function fijarEmpleadoUI() {
+  const inp = document.getElementById('numEmpleado');
+  const bar = document.getElementById('ssoBar');
+  if (!inp || !bar) return;
+  if (adminVisible) {
+    inp.readOnly = false; inp.classList.remove('bloqueado');
+  } else if (AUTH.numEmp) {
+    inp.readOnly = true; inp.classList.add('bloqueado');
+    if (inp.value !== AUTH.numEmp) {
+      inp.value = AUTH.numEmp;
+      mostrarMisPedidos(); autoFillNombre(); preMarcarDias();
+    }
+  } else {
+    inp.value = ''; inp.readOnly = true; inp.classList.add('bloqueado');
+  }
+  if (AUTH.numEmp) {
+    bar.innerHTML = `Entraste como <strong>#${esc(AUTH.numEmp)}</strong>${AUTH.nombre ? ' · ' + esc(AUTH.nombre) : ''} · <a href="#" onclick="salirSSO(); return false;">No soy yo</a>`;
+  } else {
+    bar.innerHTML = `<div class="sso-aviso"><strong>Entra desde el Portal PROESA</strong>Para pedir o cancelar tu comida, abre el comedor desde el portal con tu cuenta.<br><a class="btn-portal" href="${PORTAL_URL}">Ir al Portal PROESA</a></div>`;
+  }
+  bar.style.display = adminVisible ? 'none' : '';
+}
+
+// Cierra la sesion del portal en este navegador (equipo compartido)
+async function salirSSO() {
+  try { localStorage.removeItem(LS_RT); } catch (e) {}
+  Object.assign(AUTH, { idToken: null, refreshToken: null, uid: null, exp: 0, numEmp: null, nombre: '' });
+  ordersData = [];
+  document.getElementById('numEmpleado').value = '';
+  document.getElementById('nombreInput').value = '';
+  mostrarMisPedidos(); preMarcarDias();
+  fijarEmpleadoUI();
 }
 
 async function ensureAuth(force) {
@@ -1336,15 +1436,24 @@ async function loadFsCollection(path) {
   });
 }
 
+// Empleado: solo su pedido (las reglas no le dejan listar orders). Admin: todos.
+async function loadMisOrders() {
+  if (adminAuth) return loadFsCollection('orders');
+  if (!AUTH.numEmp) return [];
+  const doc = await fsRead(`orders/${AUTH.numEmp}`);
+  return doc ? [Object.assign(doc, { _id: AUTH.numEmp })] : [];
+}
+
 async function loadFromCloud() {
   setSyncStatus('loading', 'Cargando...');
   try {
+    await ensureAuth();
     const [menuDoc, cortDoc, catDoc, comList, ordersList] = await Promise.all([
       fsRead('config/menu'),
       adminAuth ? fsRead('config/cortesias') : null,
       fsRead('config/catalogo'),
       adminAuth ? loadFsCollection('comentarios') : [],
-      loadFsCollection('orders')
+      loadMisOrders()
     ]);
     if (menuDoc?.dias) menuData = menuDoc;
     ordersData = ordersList;
@@ -1611,7 +1720,8 @@ let ultimosDiasNuevos = null;
 
 async function enviarPedido() {
   if (!isOrderingOpen() && !adminVisible) { showToast('Pedidos cerrados. Se abren a las 5:00 PM'); return; }
-  const numEmp = document.getElementById('numEmpleado').value.trim();
+  if (!adminVisible && !AUTH.numEmp) { showToast('Entra desde el Portal PROESA para pedir'); return; }
+  const numEmp = adminVisible ? document.getElementById('numEmpleado').value.trim() : AUTH.numEmp;
   if (!numEmp) { showToast('Escribe tu numero de empleado'); document.getElementById('numEmpleado').focus(); return; }
   if (!/^[a-zA-Z0-9]+$/.test(numEmp)) { showToast('El numero de empleado no es valido'); document.getElementById('numEmpleado').focus(); return; }
   const catMatch = findCatEntry(numEmp);
@@ -1729,6 +1839,7 @@ function toggleAdmin() {
   adminVisible = !adminVisible;
   document.getElementById('adminPanel').classList.toggle('visible', adminVisible);
   if (adminVisible) { populateAdminForm(); renderOrders(); renderCortesias(); renderCatalogo(); renderComentarios(); }
+  fijarEmpleadoUI();
   if (typeof checkOrderLock === 'function') checkOrderLock();
 }
 
@@ -2331,6 +2442,7 @@ setInterval(() => {
     document.getElementById('catalogoSection').style.display = 'none';
     document.getElementById('catalogoLockSection').style.display = '';
     document.getElementById('superPinInput').value = '';
+    fijarEmpleadoUI();
     showToast('Sesion admin cerrada por inactividad');
   }
 }, 60000);
@@ -2440,14 +2552,20 @@ function toggleCancelPanel() {
   const panel = document.getElementById('cancelPanel');
   panel.classList.toggle('active');
   if (panel.classList.contains('active')) {
-    document.getElementById('cancelNumEmp').value = '';
+    const inp = document.getElementById('cancelNumEmp');
+    const fijo = !adminVisible;
+    inp.value = fijo ? (AUTH.numEmp || '') : '';
+    inp.readOnly = fijo;
+    inp.classList.toggle('bloqueado', fijo);
     document.getElementById('cancelResults').innerHTML = '';
-    document.getElementById('cancelNumEmp').focus();
+    if (fijo && AUTH.numEmp) buscarPedido();
+    else if (fijo) document.getElementById('cancelResults').innerHTML = '<div class="cancel-empty">Entra desde el Portal PROESA para cancelar</div>';
+    else inp.focus();
   }
 }
 
 function buscarPedido() {
-  const num = document.getElementById('cancelNumEmp').value.trim();
+  const num = adminVisible ? document.getElementById('cancelNumEmp').value.trim() : (AUTH.numEmp || '');
   if (!num) { showToast('Escribe tu numero de empleado'); return; }
 
   const numNorm = num.toUpperCase().replace(/^0+/, '') || '0';
@@ -2489,6 +2607,7 @@ function buscarPedido() {
 
 async function cancelarDia(orderName, orderFecha, dia) {
   if (!adminVisible && !isCancelOpen()) { showToast('Horario de cancelacion cerrado'); return; }
+  if (!adminVisible && !AUTH.numEmp) { showToast('Entra desde el Portal PROESA para cancelar'); return; }
   if (!adminVisible && diaYaPaso(dia)) { showToast('Ese día ya pasó, no se puede cancelar'); return; }
 
   await loadFromCloud();
@@ -3354,7 +3473,11 @@ let lastMenuHash = '';
 function menuHash() { return JSON.stringify(menuData.dias?.map(d => d.platoFuerte) || []); }
 
 // --- INIT ---
-(async () => { await loadFromCloud(); await autoArchivarSemanaAnterior(); renderMenu(); checkOrderLock(); lastMenuHash = menuHash(); })();
+(async () => {
+  mostrarErrorSSO();
+  await iniciarDesdeSSO(); // si no hay #ct, ensureAuth usa la sesion guardada o el anonimo (solo menu y admin con PIN)
+  await loadFromCloud(); fijarEmpleadoUI(); await autoArchivarSemanaAnterior(); renderMenu(); checkOrderLock(); lastMenuHash = menuHash();
+})();
 </script>
 </body>
 </html>
