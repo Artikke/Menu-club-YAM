@@ -60,8 +60,9 @@ gcloud projects add-iam-policy-binding menu-proesa-yama \
 Sin ese rol el callback regresa `?error=sso` y en los logs de la Function sale `iam.serviceAccounts.signBlob`.
 
 **Reglas:** despues del deploy de la Function y de que TI registre el callback, publicar
-[`firestore.rules`](firestore.rules) (consola o `firebase deploy --only firestore:rules`). Desde ese momento
-solo se puede pedir entrando por el portal.
+[`firestore.rules`](firestore.rules) junto con el `index.html` nuevo (merge a `main`), al mismo tiempo: el
+`index.html` anterior lista todos los pedidos y con las reglas nuevas eso ya no se permite
+(consola o `firebase deploy --only firestore:rules`). Desde ese momento solo se puede pedir entrando por el portal.
 
 **API key:** la Web API key ya esta restringida por dominio (paso 6 de abajo); `signInWithCustomToken` usa
 Identity Toolkit, que ya esta en la lista de APIs permitidas. No hay que cambiar nada.
