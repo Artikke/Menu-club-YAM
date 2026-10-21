@@ -149,12 +149,12 @@ body {
 .nombre-section input.bloqueado,
 .cancel-search input.bloqueado { background: var(--proesa-navy-50); color: var(--proesa-navy-700); font-weight: 700; cursor: not-allowed; }
 
-/* SSO: sesion del portal / aviso para entrar desde el portal */
+/* SSO: sesion del Gestor / aviso para entrar desde el Gestor */
 .sso-bar { max-width: 500px; margin: 16px auto 0; padding: 0 20px; text-align: center; font-size: 0.85rem; color: var(--muted); }
 .sso-bar a { color: var(--proesa-navy-700); font-weight: 600; }
 .sso-aviso { background: var(--proesa-navy-50); border: 1px solid var(--proesa-navy-200); border-radius: 10px; padding: 14px 16px; color: var(--proesa-ink); }
 .sso-aviso strong { display: block; font-size: 1rem; margin-bottom: 6px; color: var(--proesa-navy-700); }
-.sso-aviso .btn-portal { display: inline-block; margin-top: 10px; padding: 10px 22px; border-radius: 10px; background: var(--proesa-navy-700); color: #fff; text-decoration: none; }
+.sso-aviso .btn-gestor { display: inline-block; margin-top: 10px; padding: 10px 22px; border-radius: 10px; background: var(--proesa-navy-700); color: #fff; text-decoration: none; }
 
 /* MENU GRID */
 .menu-grid {
@@ -902,7 +902,7 @@ body { padding-bottom: 80px; }
 <!-- COUNTDOWN BANNER -->
 <div id="orderCountdown" style="display:none;text-align:center;padding:8px 16px;margin:0 auto 10px;max-width:600px;border-radius:10px;font-size:0.9rem;font-weight:600;"></div>
 
-<!-- SESION DEL PORTAL -->
+<!-- SESION DEL GESTOR -->
 <div class="sso-bar" id="ssoBar" style="display:none"></div>
 
 <!-- DATOS EMPLEADO -->
@@ -1145,13 +1145,14 @@ const FIREBASE_PROJECT_ID = "menu-proesa-yama";
 // No es secreta, pero hay que restringirla por dominio en Google Cloud Console.
 const FIREBASE_API_KEY = "AIzaSyDkXnkv9k4HlqhUZyBnalhffg8CbLTOHTw";
 const FS_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
-// Los empleados entran desde el portal; la Cloud Function ssoCallback regresa aqui con #ct=<custom token>
-const PORTAL_URL = "https://portal.grupoproesa.mx/";
+// Los empleados entran desde el Gestor de Personal (seccion Comedor); la Cloud Function ssoCallback
+// valida el token del Gestor y regresa aqui con #ct=<custom token>
+const GESTOR_URL = "https://proesa-team.grupoproesa.mx/";
 
 // --- FIREBASE AUTH ANONIMO (REST, sin SDK) ---
 // Las reglas de Firestore exigen token. Los PIN viven en config/secrets (ilegible desde el cliente)
 // y se validan en las reglas al crear admin_sessions/{uid}.
-// numEmp: claim del token del portal (ya normalizado como orderDocId). null = anonimo.
+// numEmp: claim del token del Gestor (ya normalizado como orderDocId). null = anonimo.
 const AUTH = { idToken: null, refreshToken: null, uid: null, exp: 0, numEmp: null };
 const LS_RT = 'yam_fb_rt';
 let authPromise = null;
@@ -1215,7 +1216,7 @@ async function iniciarDesdeSSO() {
     return true;
   } catch (e) {
     console.error('SSO', e);
-    showToast('No se pudo iniciar sesion desde el portal. Intenta de nuevo.');
+    showToast('No se pudo iniciar sesion desde el Gestor. Intenta de nuevo.');
     return false;
   }
 }
@@ -1225,16 +1226,15 @@ function mostrarErrorSSO() {
   const err = new URLSearchParams(location.search).get('error');
   if (!err) return;
   const msgs = {
-    sin_ficha: 'Tu correo no tiene numero de empleado en el Gestor. Contacta a RRHH.',
-    sin_correo: 'El portal no envio tu correo. Contacta a TI.',
-    gestor: 'No se pudo consultar el Gestor de Personal. Intenta mas tarde.'
+    sin_numero: 'El Gestor no envio tu numero de empleado. Contacta a TI.',
+    sin_token: 'Entra desde la seccion Comedor del Gestor de Personal.'
   };
-  showToast(msgs[err] || 'No se pudo iniciar sesion desde el portal. Intenta de nuevo.');
+  showToast(msgs[err] || 'No se pudo iniciar sesion desde el Gestor. Intenta de nuevo.');
   history.replaceState(null, '', location.pathname + location.hash);
 }
 
 // Fija (o libera) el numero de empleado segun la sesion. El admin con el panel abierto
-// puede escribir cualquier numero; un empleado del portal solo el suyo.
+// puede escribir cualquier numero; un empleado del Gestor solo el suyo.
 function fijarEmpleadoUI() {
   const inp = document.getElementById('numEmpleado');
   const bar = document.getElementById('ssoBar');
@@ -1253,12 +1253,12 @@ function fijarEmpleadoUI() {
   if (AUTH.numEmp) {
     bar.innerHTML = `Entraste como <strong>#${esc(AUTH.numEmp)}</strong>${AUTH.nombre ? ' · ' + esc(AUTH.nombre) : ''} · <a href="#" onclick="salirSSO(); return false;">No soy yo</a>`;
   } else {
-    bar.innerHTML = `<div class="sso-aviso"><strong>Entra desde el Portal PROESA</strong>Para pedir o cancelar tu comida, abre el comedor desde el portal con tu cuenta.<br><a class="btn-portal" href="${PORTAL_URL}">Ir al Portal PROESA</a></div>`;
+    bar.innerHTML = `<div class="sso-aviso"><strong>Entra desde el Gestor de Personal</strong>Para pedir o cancelar tu comida, abre la seccion Comedor del Gestor de Personal.<br><a class="btn-gestor" href="${GESTOR_URL}">Ir al Gestor de Personal</a></div>`;
   }
   bar.style.display = adminVisible ? 'none' : '';
 }
 
-// Cierra la sesion del portal en este navegador (equipo compartido)
+// Cierra la sesion del Gestor en este navegador (equipo compartido)
 async function salirSSO() {
   try { localStorage.removeItem(LS_RT); } catch (e) {}
   Object.assign(AUTH, { idToken: null, refreshToken: null, uid: null, exp: 0, numEmp: null, nombre: '' });
@@ -1720,7 +1720,7 @@ let ultimosDiasNuevos = null;
 
 async function enviarPedido() {
   if (!isOrderingOpen() && !adminVisible) { showToast('Pedidos cerrados. Se abren a las 5:00 PM'); return; }
-  if (!adminVisible && !AUTH.numEmp) { showToast('Entra desde el Portal PROESA para pedir'); return; }
+  if (!adminVisible && !AUTH.numEmp) { showToast('Entra desde el Gestor de Personal para pedir'); return; }
   const numEmp = adminVisible ? document.getElementById('numEmpleado').value.trim() : AUTH.numEmp;
   if (!numEmp) { showToast('Escribe tu numero de empleado'); document.getElementById('numEmpleado').focus(); return; }
   if (!/^[a-zA-Z0-9]+$/.test(numEmp)) { showToast('El numero de empleado no es valido'); document.getElementById('numEmpleado').focus(); return; }
@@ -2559,7 +2559,7 @@ function toggleCancelPanel() {
     inp.classList.toggle('bloqueado', fijo);
     document.getElementById('cancelResults').innerHTML = '';
     if (fijo && AUTH.numEmp) buscarPedido();
-    else if (fijo) document.getElementById('cancelResults').innerHTML = '<div class="cancel-empty">Entra desde el Portal PROESA para cancelar</div>';
+    else if (fijo) document.getElementById('cancelResults').innerHTML = '<div class="cancel-empty">Entra desde el Gestor de Personal para cancelar</div>';
     else inp.focus();
   }
 }
@@ -2607,7 +2607,7 @@ function buscarPedido() {
 
 async function cancelarDia(orderName, orderFecha, dia) {
   if (!adminVisible && !isCancelOpen()) { showToast('Horario de cancelacion cerrado'); return; }
-  if (!adminVisible && !AUTH.numEmp) { showToast('Entra desde el Portal PROESA para cancelar'); return; }
+  if (!adminVisible && !AUTH.numEmp) { showToast('Entra desde el Gestor de Personal para cancelar'); return; }
   if (!adminVisible && diaYaPaso(dia)) { showToast('Ese día ya pasó, no se puede cancelar'); return; }
 
   await loadFromCloud();

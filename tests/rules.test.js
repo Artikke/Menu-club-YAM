@@ -33,7 +33,7 @@ beforeEach(async () => {
   });
 });
 
-// Empleado que entro por el portal: custom token con claim numEmp
+// Empleado que entro por el Gestor: custom token con claim numEmp
 const emp = (n) => env.authenticatedContext(`emp_${n}`, { numEmp: n }).firestore();
 const anon = () => env.authenticatedContext('anon_1', { firebase: { sign_in_provider: 'anonymous' } }).firestore();
 
@@ -79,7 +79,7 @@ test('empleado sigue sin poder mandar campos extra ni totales invalidos', async 
   await assertFails(setDoc(doc(db, 'orders/123'), pedido('123', { total: 99 })));
 });
 
-test('anonimo (sin portal) no pide, no cancela, no lee pedidos; si ve el menu', async () => {
+test('anonimo (sin Gestor) no pide, no cancela, no lee pedidos; si ve el menu', async () => {
   const db = anon();
   await assertFails(setDoc(doc(db, 'orders/123'), pedido('123')));
   await assertFails(deleteDoc(doc(db, 'orders/456')));
@@ -106,7 +106,7 @@ test('admin con PIN (anonimo) sigue pudiendo todo en orders', async () => {
   await assertSucceeds(deleteDoc(doc(db, 'orders/456')));
 });
 
-test('admin con PIN desde una sesion del portal (uid emp_*) tambien funciona', async () => {
+test('admin con PIN desde una sesion del Gestor (uid emp_*) tambien funciona', async () => {
   const uid = 'emp_123';
   const db = env.authenticatedContext(uid, { numEmp: '123' }).firestore();
   await assertSucceeds(setDoc(doc(db, `admin_sessions/${uid}`), { pin: ADMIN_PIN, level: 'admin', createdAt: serverTimestamp() }));
