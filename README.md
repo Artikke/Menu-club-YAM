@@ -31,7 +31,7 @@ URL: https://comedor-yama.grupoproesa.mx/ · Firebase project: `menu-proesa-yama
    APIs: Identity Toolkit, Token Service, Cloud Firestore.
 
 ## Login por el portal (SSO) - issue #3
-Archivos: `functions/index.js` (Cloud Function `ssoCallback`, Node 20, 2nd gen), `firebase.json`, `.firebaserc`.
+Archivos: `functions/index.js` (Cloud Function `ssoCallback`, Node 22, 2nd gen), `firebase.json`, `.firebaserc`.
 Valores: `appCode` = `comedor-yama`; JWKS `https://portal.grupoproesa.mx/.well-known/jwks.json`;
 Gestor `https://proesa-team.grupoproesa.mx/api/integracion/v1/empleado?email=...` con header `X-Integracion-Token`.
 
