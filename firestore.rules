@@ -8,8 +8,10 @@ rules_version = '2';
 //      superPin -> nivel "super": todo lo de admin + catalogo de empleados
 //  - El admin "inicia sesion" creando admin_sessions/{uid} con el PIN;
 //    las reglas comparan el PIN contra config/secrets y guardan el nivel. Expira a las 12 h.
-//  - Limitacion conocida (igual que LANS): no hay login de empleado, cualquiera con el
-//    link puede pedir o cancelar con cualquier numero de empleado.
+//  - Empleados: entran desde el Gestor de Personal (Cloud Function ssoCallback). Su token trae
+//    el claim numEmp (normalizado: mayusculas, sin ceros a la izquierda = id de orders/{id}).
+//    Cada quien solo lee, crea, modifica y borra SU pedido. El anonimo (sin numEmp) ya no
+//    puede pedir; solo sirve para ver el menu y para el acceso de admin con PIN.
 // ============================================================
 service cloud.firestore {
   match /databases/{db}/documents {
@@ -42,6 +44,22 @@ service cloud.firestore {
 
     function isSuper() {
       return hasSession() && level() == 'super';
+    }
+
+    function numEmp() {
+      return signedIn() && request.auth.token.get('numEmp', null) is string
+        ? request.auth.token.numEmp : null;
+    }
+
+    function normEmp(s) {
+      return s.upper().replace('^0+', '');
+    }
+
+    // El pedido orders/{id} es del empleado si el id es su numEmp y el numEmpleado
+    // guardado (normalizado) tambien. d = request.resource.data o resource.data.
+    function esMiPedido(id, d) {
+      return numEmp() != null && numEmp() == id
+        && d.numEmpleado is string && normEmp(d.numEmpleado) == id;
     }
 
     function validOrder() {
@@ -100,9 +118,10 @@ service cloud.firestore {
 
     // --- Pedidos: un documento por numero de empleado ---
     match /orders/{id} {
-      allow read: if signedIn();
-      allow create, update: if isAdmin() || (signedIn() && validOrder());
-      allow delete: if signedIn();
+      allow get: if isAdmin() || (numEmp() != null && numEmp() == id);
+      allow list: if isAdmin();
+      allow create, update: if isAdmin() || (validOrder() && esMiPedido(id, request.resource.data));
+      allow delete: if isAdmin() || esMiPedido(id, resource.data);
     }
 
     // --- Buzon: cualquiera crea; admin lee, marca leido y borra ---
